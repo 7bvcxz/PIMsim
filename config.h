@@ -1,5 +1,5 @@
 // first, test on 1 pseudo channel
-#define NUM_PCHS	1
+#define NUM_PCHS	16
 #define NUM_BGS		4
 #define NUM_BANKS	16
 #define NUM_ROWS	8
