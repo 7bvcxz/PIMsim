@@ -1,20 +1,21 @@
 #include <iostream>
+#include "config.h"
 using namespace std;
 
 class PimInstruction{
 private:
   enum PIM_OP {ADD, MUL, MAC, MAD, ADD_AAM, MUL_AAM, MAC_AAM, MAD_AAM, MOV, FILL, NOP, JUMP, EXIT};
-  unsigned short *dst;	  // uint16
-  unsigned short *src0;	  // uint16
-  unsigned short *src1;	  // uint16
-  int imm0;
-  int imm1;
-  unsigned char *physmem  // uint8
+  uint16_t *dst;
+  uint16_t *src0;
+  uint16_t *src1;
+  uint32_t imm0;
+  uint32_t imm1;
+  uint8_t *physmem;
 };
 
 class PimUnit{
 private:
-  unsigned int PPC;
+  uint8_t PPC;
   PimInstruction CRF[32];
 
 public:
@@ -23,10 +24,27 @@ public:
   }
   
   void CRF_init(){	
-	// todo : read CRF.txt and write down //
+	// TODO : read CRF.txt and write down //
 	
 
 	////////////////////////////////////////
   }
+
+  // TODO : issue(pim_cmd) //
+ 
+
+  ///////////////////////////
+ 
+  // TODO : set_operand_addr(pim_cmd) //
+ 
+
+  //////////////////////////////////////
+ 
+  // TODO : execute(CRF[PPC] //
+  
+ 
+  /////////////////////////////
+ 
+  // ~ the end ~ //
 };
 
