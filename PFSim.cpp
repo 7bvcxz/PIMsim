@@ -2,6 +2,7 @@
 #include <string>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <string.h>
 #include "config.h"
 #include "PIM_Unit.cpp"
 using namespace std;
@@ -31,15 +32,12 @@ public:
 	//physmem = (uint8_t*) mmap(NULL, PHYSMEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, this->fd, 0);
 	
 
-	physmem = (uint8_t*)mmap(NULL, 40, PROT_READ | PROT_WRITE, MAP_SHARED, this->fd, 0);
+	this->physmem = (uint8_t*)mmap(NULL, 40, PROT_READ | PROT_WRITE, MAP_SHARED, this->fd, 0);
 	cout << "Allocated Space for PHYSMEM\n";
 
-	for(int i=0; i<4; i++){
-	  sprintf((uint8_t*)physmem, "%d\n", i);
-	}
+	memcpy("abcdefg", this->physmem, 7);
 	
-	
-	cout << "data : " << *physmem << endl;
+	cout << "data : " << *(this->physmem) << endl;
 		
 	///////////////////////////////
 	cout << "initialized PHYSMEM\n\n";
