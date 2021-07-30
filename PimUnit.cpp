@@ -1,6 +1,10 @@
 #include <iostream>
 #include <fstream>
+#include <string.h>
+#include <vector>
+#include <sstream>
 #include "config.h"
+#include "utils.h"
 using namespace std;
 
 class PimInstruction{
@@ -28,15 +32,32 @@ public:
 	// TODO : read CRF.txt and write down to CRF //
 	ifstream fp;
 	fp.open("CRF.txt");
-	while(!fp.eof()){
-	  string str;
-	  getline(fp, str);
+	
+	string str;
+	while(getline(fp, str) && !fp.eof()){
+	  string mk_part[4];
+	  int num_parts = (str.size()-1)/10 + 1;
 
-	  
+	  cout << "# parts : " << num_parts << endl;
+	  for(int i=0; i< num_parts; i++){
+		mk_part[i] = (str.substr(i*10, 9)).substr(0, str.substr(i*10, 9).find(' '));
+		cout << mk_part[i] << " ";
+	  }
+
+	  this->PushCrf(mk_part, num_parts);
+	  this->PPC += 1;
+	  cout << endl;	  
 	}
-
+	this->PPC = 0;
 	////////////////////////////////////////
   }
+
+  void PushCrf(string* mk_part, int num_parts){
+	this->CRF[PPC].PIM_OP = mk_part[0];
+	
+	return;
+  }
+
 
   // TODO : issue(pim_cmd) //
  

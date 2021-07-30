@@ -46,14 +46,14 @@ public:
 
   void CrfInit(){
 	cout << "initializing PimUnit's CRF...\n";
-	for(int i=0; i<NUM_PIMS; i++)
+	for(int i=0; i<1; i++)
 	  this->_PimUnit[i].CrfInit(); 
 	cout << "initialized PimUnit's CRF!\n\n";
   }
 
   void Run(){
 	// TODO : Fetch Pim Command and send to PIM_Units //
-		
+	
 	
 	////////////////////////////////////////////////////
 	
