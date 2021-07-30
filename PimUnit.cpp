@@ -24,7 +24,7 @@ public:
 	this->PPC = 0;
   }
   
-  void CRF_init(){	
+  void CrfInit(){	
 	// TODO : read CRF.txt and write down to CRF //
 	ifstream fp;
 	fp.open("CRF.txt");
@@ -42,12 +42,14 @@ public:
  
 
   ///////////////////////////
- 
+
+
   // TODO : set_operand_addr(pim_cmd) //
  
 
   //////////////////////////////////////
  
+
   // TODO : execute(CRF[PPC] //
   
  

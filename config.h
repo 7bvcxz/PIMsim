@@ -15,7 +15,7 @@ typedef unsigned long long uint64_t;
 
 #define NUM_CELLS	NUM_ROWS * NUM_COLS		// 256
 #define NUM_SECTORS	16
-#define SECTOR_SIZE	2 // 2byte = 16bit
+#define SECTOR_SIZE	4 // 4 byte = 32 bit
 
 #define PHYSMEM_SIZE  NUM_BANKS * NUM_CELLS * NUM_SECTORS * SECTOR_SIZE // 2097152 = 256 * 256 * 16 * 2
 

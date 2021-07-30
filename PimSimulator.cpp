@@ -15,7 +15,7 @@ private:
   string pim_micro_kernel_filename;
   int fd;
   uint8_t *physmem;
-  PimUnit pim_unit[NUM_PIMS];
+  PimUnit _PimUnit[NUM_PIMS];
 
 public:
   PimSimulator(){
@@ -24,29 +24,31 @@ public:
 	this->pim_micro_kernel_filename = "CRF.txt";
 	this->fd = -1;
 	for(int i=0; i<NUM_PIMS; i++)
-	  this->pim_unit[i] = PimUnit();	
+	  this->_PimUnit[i] = PimUnit();	
   }
 
-  void Physmem_init(){
+  void PhysmemInit(){
 	cout << "initializing PHYSMEM...\n";
+
 	// TODO : initialize phymem //
-	this->physmem = (uint8_t*)mmap(NULL, PHYSMEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, this->fd, 0);
+	this->physmem = (uint8_t*)mmap(NULL, PHYSMEM_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, this->fd, 0);
+	if (this->physmem == (uint8_t*) MAP_FAILED) perror("mmap");
 	cout << "Allocated Space for PHYSMEM\n";
-
-	/*   test.... <- later
-	string a = "abcdefg";
-	memcpy(&a, this->physmem, 7);	
-	cout << "data : " << *(this->physmem) << endl;
-	*/
-
+	
+	float wr = 20, rd = 0;
+	memcpy(this->physmem, &wr, 4);
+	memcpy(&rd, this->physmem, 4);
+	cout << "wr : " << wr << " -> physmem -> " << "rd : " << rd << endl;
 	///////////////////////////////
-	cout << "initialized PHYSMEM\n\n";
+	cout << "initialized PHYSMEM!\n\n";
 	return;
   }
 
-  void CRF_init(){
+  void CrfInit(){
+	cout << "initializing PimUnit's CRF...\n";
 	for(int i=0; i<NUM_PIMS; i++)
-	  this->pim_unit[i].CRF_init();	  
+	  this->_PimUnit[i].CrfInit(); 
+	cout << "initialized PimUnit's CRF!\n\n";
   }
 
   void Run(){
@@ -65,11 +67,10 @@ public:
 int main(){
   PimSimulator PimSim = PimSimulator();
   
-  PimSim.Physmem_init();
-  PimSim.CRF_init();
+  PimSim.PhysmemInit();
+  PimSim.CrfInit();
 
   PimSim.Run();
-
   
   return 0;
 }
