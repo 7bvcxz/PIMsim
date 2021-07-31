@@ -30,7 +30,6 @@ public:
   void PhysmemInit(){
 	cout << "initializing PHYSMEM...\n";
 
-	// TODO : initialize phymem //
 	this->physmem = (uint8_t*)mmap(NULL, PHYSMEM_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, this->fd, 0);
 	if (this->physmem == (uint8_t*) MAP_FAILED) perror("mmap");
 	cout << "Allocated Space for PHYSMEM\n";
@@ -39,7 +38,7 @@ public:
 	memcpy(this->physmem, &wr, 4);
 	memcpy(&rd, this->physmem, 4);
 	cout << "wr : " << wr << " -> physmem -> " << "rd : " << rd << endl;
-	///////////////////////////////
+	
 	cout << "initialized PHYSMEM!\n\n";
 	return;
   }
@@ -53,11 +52,27 @@ public:
 
   void Run(){
 	// TODO : Fetch Pim Command and send to PIM_Units //
-	
-	
+	ifstream fp;
+	fp.open("PimCmd.txt");
+
+	string str;
+	while(getline(fp, str) && !fp.eof()){
+	  string cmd_part[3];
+	  int num_parts = (str.size()-1)/10 + 1;
+
+	  for(int i=0; i<num_parts; i++){
+		cmd_part[i] = (str.substr(i*10, 9)).substr(0, str.substr(i*10, 9).find(' '));
+		cout << cmd_part[i] << " ";
+	  }
+	  cout << endl;	
+	  
+	  for(int j=0; j<1; j++)
+	    this->_PimUnit[j].Issue(cmd_part, num_parts);
+
+	  this->clk ++;
+	}
 	////////////////////////////////////////////////////
 	
-	this->clk ++;
   }
 
   // ~ the end ~ //
