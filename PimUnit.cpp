@@ -22,15 +22,16 @@ class PimUnit{
 private:
   PimInstruction CRF[32];
   uint8_t PPC;
+  int RA;
   int LC;
-  float* GRF_A;
-  float* GRF_B;
-  float* SRF_A;
-  float* SRF_M;
+  float *GRF_A;
+  float *GRF_B;
+  float *SRF_A;
+  float *SRF_M;
 
-  float* dst;
-  float* src0;
-  float* src1;
+  float *dst;
+  float *src0;
+  float *src1;
 
   float *physmem;
   float *data;
@@ -39,6 +40,7 @@ public:
   PimUnit(){
 	PPC = 0;
 	LC  = -1;
+	RA  = 0;
 	GRF_A = (float*)mmap(NULL, 8 * 16 * 32 / 8, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	GRF_B = (float*)mmap(NULL, 8 * 16 * 32 / 8, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	SRF_A = (float*)mmap(NULL, 8 * 32 / 8, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -93,14 +95,13 @@ public:
 	}
   }
 
-
-  // TODO : issue(pim_cmd) //
   void Issue(string* pim_cmd, int num_parts){
 
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){ // WR  3  156
 	  float WR = (float)StringToNum(pim_cmd[2]);
 	  memcpy(physmem + StringToNum(pim_cmd[1])*CELL_SIZE/8, &WR, 4);
+	  data = physmem + StringToNum(pim_cmd[1])*CELL_SIZE/8, 4;
 	}
 	else if(pim_cmd[0] == "RD"){ // RD  3
 	  float RD = 0;
@@ -136,7 +137,8 @@ public:
 
 	// SET ADDR & EXECUTE // 
 	cout << "execute PPC : " << (int)PPC << endl;
-	
+
+	cout << "num parts : " << num_parts << endl;
 	SetOperandAddr(pim_cmd);
 
 	Execute();	
@@ -146,12 +148,12 @@ public:
 	cout << endl;
  }
 
-  ///////////////////////////
-
-  // TODO : set_operand_addr(pim_cmd) //
   void SetOperandAddr(string* pim_cmd){
+
+	if(CRF[PPC].PIM_OP == 12) return;  // EXIT
+
 	// GRF_A, GRF_B
-	if(CRF[PPC].PIM_OP>=4 && CRF[PPC].PIM_OP<=7){  // AAM mode
+	else if(CRF[PPC].PIM_OP>=4 && CRF[PPC].PIM_OP<=7){  // AAM mode
 	  int A_idx = StringToNum(pim_cmd[1])%8;
 	  int B_idx = StringToNum(pim_cmd[1])/8; // + RA % 2 * 4
 	  
@@ -167,8 +169,10 @@ public:
 	  else if(CRF[PPC].dst >= 20 && CRF[PPC].dst <30)	dst = GRF_B + CRF[PPC].dst % 10 * 16;  
 	  if(CRF[PPC].src0 >=10 && CRF[PPC].src0 < 20)		src0 = GRF_A + CRF[PPC].src0 % 10 * 16;
 	  else if(CRF[PPC].src0 >= 20 && CRF[PPC].src0 <30)	src0 = GRF_B + CRF[PPC].src0 % 10 * 16;
-	  if(CRF[PPC].src1 >=10 && CRF[PPC].src1 < 20)		src1 = GRF_A + CRF[PPC].src1 % 10 * 16;
-	  else if(CRF[PPC].src1 >= 20 && CRF[PPC].src1 <30)	src1 = GRF_B + CRF[PPC].src1 % 10 * 16;
+	  if(CRF[PPC].PIM_OP < 4){ // ADD, MUL, MAC, MAD --> dst, src0, src1
+		if(CRF[PPC].src1 >=10 && CRF[PPC].src1 < 20)		src1 = GRF_A + CRF[PPC].src1 % 10 * 16;
+		else if(CRF[PPC].src1 >= 20 && CRF[PPC].src1 <30)	src1 = GRF_B + CRF[PPC].src1 % 10 * 16;	
+	  }
 	}
 
 	// bank, SRF //
@@ -178,48 +182,36 @@ public:
 	if     (CRF[PPC].src0 <= 1)	src0 = data; 
 	else if(CRF[PPC].src0 == 4) src0 = SRF_A;
 	else if(CRF[PPC].src0 == 5)	src0 = SRF_M;
-	if     (CRF[PPC].src1 <= 1)	src1 = data; 
-	else if(CRF[PPC].src1 == 4)	src1 = SRF_A;
-	else if(CRF[PPC].src1 == 5) src1 = SRF_M;
+	if(CRF[PPC].PIM_OP < 4){ // ADD, MUL, MAC, MAD --> dst, src0, src1
+	  if     (CRF[PPC].src1 <= 1)	src1 = data; 
+	  else if(CRF[PPC].src1 == 4)	src1 = SRF_A;
+	  else if(CRF[PPC].src1 == 5)	src1 = SRF_M;
+	}
   }
-  //////////////////////////////////////
-
-  // TODO : execute(CRF[PPC] //
+  
   void Execute(){
 	switch(CRF[PPC].PIM_OP){
 	  case(ADD):
-		cout << "ADD~~\n";
+	  case(ADD_AAM):
 		_ADD();
 		break;
 	  case(MUL):
-		cout << "MUL~~\n";
+	  case(MUL_AAM):
+		_MUL();
 		break;
 	  case(MAC):
-		cout << "MAC~~\n";
+	  case(MAC_AAM):
+		_MAC();
 		break;
 	  case(MAD):
-		cout << "MAD~~\n";
-		break;
-	  case(ADD_AAM):
-		cout << "ADD_AAM~~\n";
-		break;
-	  case(MUL_AAM):
-		cout << "MUL_AAM~~\n";
-		break;
-	  case(MAC_AAM):
-		cout << "MAC_AAM~~\n";
-		break;
 	  case(MAD_AAM):
-		cout << "MAD_AAM~~\n";
+		_MAD();
 		break;
 	  case(MOV):
-		cout << "MOV~~\n";
-		break;
 	  case(FILL):
-		cout << "FILL~~\n";
+		_MOV();
 		break;
 	  case(EXIT):
-		cout << "EXIT~~\n";
 		break;
 	}
   }
@@ -227,12 +219,42 @@ public:
   void _ADD(){
 	for(int i=0; i<16; i++){
 	  *dst = *src0 + *src1;
-	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  = dst+1;
-	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 = src0+1;
-	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 = src1+1;
+	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
+	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
 	}
   }
-  /////////////////////////////
+ 
+  void _MUL(){
+	for(int i=0; i<16; i++){
+	  *dst = *src0 * *src1;
+	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
+	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
+	}
+  }
+
+  void _MAC(){
+	for(int i=0; i<16; i++){
+	  *dst += *src0 * *src1;
+	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
+	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
+	}
+  }
+
+  void _MAD(){
+	cout << "not yet\n";
+  }
+
+  void _MOV(){
+	for(int i=0; i<16; i++){
+	  *dst = *src0;
+	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
+	}
+  }
+
 
   // ~ the end ~ //
 };

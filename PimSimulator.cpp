@@ -19,7 +19,7 @@ private:
 public:
   PimSimulator(){
 	clk = 0;
-	pim_cmd_filename = "Pim_cmd.txt";
+	pim_cmd_filename = "PimCmd.txt";
 	pim_micro_kernel_filename = "CRF.txt";
 	for(int i=0; i<NUM_PIMS; i++)
 	  _PimUnit[i] = PimUnit();
@@ -52,7 +52,6 @@ public:
   }
 
   void Run(){
-	// TODO : Fetch Pim Command and send to PIM_Units //
 	ifstream fp;
 	fp.open("PimCmd.txt");
 
@@ -61,6 +60,7 @@ public:
 	  string cmd_part[3];
 	  int num_parts = (str.size()-1)/10 + 1;
 
+	  cout << clk+1 << " : ";
 	  for(int i=0; i<num_parts; i++){
 		cmd_part[i] = (str.substr(i*10, 9)).substr(0, str.substr(i*10, 9).find(' '));
 		cout << cmd_part[i] << " ";
@@ -72,8 +72,6 @@ public:
 
 	  clk ++;
 	}
-	////////////////////////////////////////////////////
-	
   }
 
   // ~ the end ~ //
@@ -90,12 +88,4 @@ int main(){
   
   return 0;
 }
-
-
-
-
-
-
-
-
 
