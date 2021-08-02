@@ -41,10 +41,11 @@ public:
 	PPC = 0;
 	LC  = -1;
 	RA  = 0;
-	GRF_A = (float*)mmap(NULL, 8 * 16 * 32 / 8, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	GRF_B = (float*)mmap(NULL, 8 * 16 * 32 / 8, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	SRF_A = (float*)mmap(NULL, 8 * 32 / 8, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	SRF_M = (float*)mmap(NULL, 8 * 32 / 8, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	GRF_A = (float*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	GRF_B = (float*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	SRF_A = (float*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	SRF_M = (float*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	data  = (float*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   }
   
   void SetPhysmem(float* physmem){
@@ -95,19 +96,19 @@ public:
 	}
   }
 
-  void Issue(string* pim_cmd, int num_parts){
+  int Issue(string* pim_cmd, int num_parts){
 
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){ // WR  3  156
 	  float WR = (float)StringToNum(pim_cmd[2]);
-	  memcpy(physmem + StringToNum(pim_cmd[1])*CELL_SIZE/8, &WR, 4);
-	  data = physmem + StringToNum(pim_cmd[1])*CELL_SIZE/8, 4;
+	  memcpy(physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, &WR, 4);
+	  memcpy(data, physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
 	}
 	else if(pim_cmd[0] == "RD"){ // RD  3
 	  float RD = 0;
-	  memcpy(&RD, physmem + StringToNum(pim_cmd[1])*CELL_SIZE/8, 4);
+	  memcpy(&RD, physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
 	  cout << "RD : " << RD << endl;
-	  data = physmem + StringToNum(pim_cmd[1])*CELL_SIZE/8, 4;
+	  memcpy(data, physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
 	}
 
 	// NOP & JUMP // 
@@ -116,7 +117,7 @@ public:
 	  else if(LC > 0) LC -= 1;
 	  else if(LC == 0){
 		LC = -1;
-		return;
+		return NOP_END;
 	  }
 	}
 
@@ -135,10 +136,12 @@ public:
 	  }
 	}
 
+	if(CRF[PPC].PIM_OP == EXIT)
+	  return EXIT_END;
+
 	// SET ADDR & EXECUTE // 
 	cout << "execute PPC : " << (int)PPC << endl;
 
-	cout << "num parts : " << num_parts << endl;
 	SetOperandAddr(pim_cmd);
 
 	Execute();	
@@ -146,6 +149,7 @@ public:
 	PPC += 1;
 
 	cout << endl;
+	return 0;
  }
 
   void SetOperandAddr(string* pim_cmd){
@@ -176,9 +180,9 @@ public:
 	}
 
 	// bank, SRF //
-	if     (CRF[PPC].dst <= 1)	dst  = data; 
-	else if(CRF[PPC].dst == 4)	dst  = SRF_A;
-	else if(CRF[PPC].dst == 5)	dst  = SRF_M;
+	if     (CRF[PPC].dst  <= 1)	dst  = data; 
+	else if(CRF[PPC].dst  == 4)	dst  = SRF_A;
+	else if(CRF[PPC].dst  == 5)	dst  = SRF_M;
 	if     (CRF[PPC].src0 <= 1)	src0 = data; 
 	else if(CRF[PPC].src0 == 4) src0 = SRF_A;
 	else if(CRF[PPC].src0 == 5)	src0 = SRF_M;
@@ -254,8 +258,7 @@ public:
 	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
 	}
   }
-
-
+  
   // ~ the end ~ //
 };
 

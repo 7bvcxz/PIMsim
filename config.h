@@ -4,6 +4,14 @@ typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
 typedef unsigned long long uint64_t;
 
+#define UINT8_MAX   0xffui8
+#define UINT16_MAX  0xffffui16
+#define UINT32_MAX  0xffffffffui32
+#define UINT64_MAX  0xffffffffffffffffui64
+
+#define NOP_END	    -1
+#define EXIT_END	-2
+
 #define BGS_PER_PCH 4
 #define BKS_PER_BG  4
 
@@ -16,16 +24,16 @@ typedef unsigned long long uint64_t;
 
 #define NUM_CELLS	NUM_ROWS * NUM_COLS		// 256
 #define NUM_SECTORS	16
-#define SECTOR_SIZE	4 // 4 byte = 32 bit
 
+// SIZE IS BYTE
+#define SECTOR_SIZE		  4  // 4 byte = 32 bit
 #define PHYSMEM_SIZE	  NUM_BANKS * NUM_CELLS * NUM_SECTORS * SECTOR_SIZE // 256 * 256 * 16 * 4
 #define PIM_PHYSMEM_SIZE  2 * NUM_CELLS * NUM_SECTORS * SECTOR_SIZE // 2 * 256 * 16 * 4
 #define CELL_SIZE		  NUM_SECTORS * SECTOR_SIZE
 
-#define UINT8_MAX   0xffui8
-#define UINT16_MAX  0xffffui16
-#define UINT32_MAX  0xffffffffui32
-#define UINT64_MAX  0xffffffffffffffffui64
+#define GRF_SIZE	8 * NUM_SECTORS * SECTOR_SIZE
+#define SRF_SIZE	NUM_SECTORS * SECTOR_SIZE
+
 
 
 enum PIM_OPERATION {ADD=0, MUL, MAC, MAD, ADD_AAM, MUL_AAM, MAC_AAM, MAD_AAM, MOV, FILL, NOP, JUMP, EXIT};

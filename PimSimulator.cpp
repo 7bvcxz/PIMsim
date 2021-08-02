@@ -32,13 +32,8 @@ public:
 	if (physmem == (float*) MAP_FAILED) perror("mmap");
 	cout << "Allocated Space for PHYSMEM\n";
 	
-	float wr = 20, rd = 0;
-	memcpy(physmem, &wr, 4);
-	memcpy(&rd, physmem, 4);
-	cout << "wr : " << wr << " -> physmem -> " << "rd : " << rd << endl;
-
 	for(int i=0; i<NUM_PIMS; i++)
-	  _PimUnit[i].SetPhysmem(physmem + i * PIM_PHYSMEM_SIZE / 8);
+	  _PimUnit[i].SetPhysmem(physmem + i * PIM_PHYSMEM_SIZE / 4);
 
 	cout << "initialized PHYSMEM!\n\n";
 	return;
@@ -59,8 +54,9 @@ public:
 	while(getline(fp, str) && !fp.eof()){
 	  string cmd_part[3];
 	  int num_parts = (str.size()-1)/10 + 1;
+	  int flag = 0;
 
-	  cout << clk+1 << " : ";
+	  cout << "Cmd "<< clk+1 << " : ";
 	  for(int i=0; i<num_parts; i++){
 		cmd_part[i] = (str.substr(i*10, 9)).substr(0, str.substr(i*10, 9).find(' '));
 		cout << cmd_part[i] << " ";
@@ -68,7 +64,16 @@ public:
 	  cout << endl;	
 	  
 	  for(int j=0; j<1; j++)
-	    _PimUnit[j].Issue(cmd_part, num_parts);
+	    flag = _PimUnit[j].Issue(cmd_part, num_parts);
+	 
+	  if(flag == EXIT_END){
+		cout << "EXIT Executed!\n";
+		break;
+	  }
+	  else if(flag == NOP_END){
+		cout << "NOP Executed!\n";
+		break;
+	  }
 
 	  clk ++;
 	}
