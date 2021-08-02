@@ -40,7 +40,7 @@ PIM_OPERAND StringToOperand(string str){
   else if(str == "GRF_A") return GRF_A;
   else if(str == "GRF_B") return GRF_B;
   else if(str == "SRF_A") return SRF_A;
-  else if(str == "SRF_B") return SRF_B;
+  else if(str == "SRF_M") return SRF_M;
   else if(str == "GRF_A0") return GRF_A0;
   else if(str == "GRF_A1") return GRF_A1;
   else if(str == "GRF_A2") return GRF_A2;

@@ -1,7 +1,9 @@
 WR        3         156
+RD        3
 WR        4         300
+RD        4
 WR        5         71
-RD        1
+RD        5
 RD        2
 RD        3
 RD        4
