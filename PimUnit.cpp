@@ -101,7 +101,7 @@ public:
   int Issue(string* pim_cmd, int num_parts){
 
 	// DRAM READ & WRITE // 
-	if(pim_cmd[0] == "WR"){ // WR  3  156
+	if(pim_cmd[0] == "WR"){
 	  for(int i=0; i<16; i++){
 		float WR = StringToNum(pim_cmd[i+2]);
 		memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + i, &WR, 4);
@@ -110,7 +110,7 @@ public:
 	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 64);
 	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 64);
 	}
-	else if(pim_cmd[0] == "RD"){ // RD  3
+	else if(pim_cmd[0] == "RD"){
 	  float RD = 0;
 	  memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
 	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 64);
@@ -235,6 +235,7 @@ public:
 
   void _ADD(){
 	for(int i=0; i<16; i++){
+	  cout << *src0 << " + " << *src1 << endl;
 	  *dst = *src0 + *src1;
 	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
 	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;

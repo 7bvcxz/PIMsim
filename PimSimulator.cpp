@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstdlib>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <string.h>
@@ -13,10 +14,11 @@ private:
   uint64_t clk;
   string pim_cmd_filename;
   string pim_micro_kernel_filename;
-  float *physmem;
   PimUnit _PimUnit[NUM_PIMS];
 
 public:
+  float *physmem;
+  
   PimSimulator(){
 	clk = 0;
 	pim_cmd_filename = "PimCmd.txt";
@@ -34,6 +36,7 @@ public:
 	
 	for(int i=0; i<NUM_PIMS; i++)
 	  _PimUnit[i].SetPhysmem(physmem + i * PIM_PHYSMEM_SIZE / 4);
+	cout << ">> Allocated to each PimUnit\n";
 
 	cout << "<< initialized PHYSMEM!\n\n";
 	return;
@@ -83,15 +86,38 @@ public:
   // ~ the end ~ //
 };
 
+void AddTest(PimSimulator PimSim){
+  srand((unsigned)time(NULL));
+  float A[2048];
+  float B[2048];
+  float C[2048];
+  float D[2048];
+
+  for(int i=0; i<2048; i++){
+	A[i] = (float)rand() / RAND_MAX;
+	B[i] = (float)rand() / RAND_MAX;
+	C[i] = A[i] + B[i];
+  }
+
+  for(int i=0; i<NUM_PIMS; i++){
+	for(int j=0; j<16; j++){
+	   memcpy(PimSim.physmem + 2 * CELLS_PER_BK * i + j, &A[i*16 + j], 4);
+	   memcpy(PimSim.physmem + 2 * CELLS_PER_BK * i + j, &B[i*16 + j + 16], 4);
+	}
+  }
+
+  PimSim.CrfInit();
+  PimSim.Run();
+
+}
 
 int main(){
   PimSimulator PimSim = PimSimulator();
   
   PimSim.PhysmemInit();
-  PimSim.CrfInit();
 
-  PimSim.Run();
-  
+  AddTest(PimSim);
+
   return 0;
 }
 

@@ -1,7 +1,4 @@
-MOV       GRF_A1    EVEN_BANK
-JUMP      -1        7
-ADD_AAM   GRF_A     EVEN_BANK GRF_A
-JUMP      -1        7
-MOV       EVEN_BANK GRF_A1
-JUMP      -1        7
+MOV       GRF_A0    EVEN_BANK
+ADD       GRF_A0    EVEN_BANK GRF_A0
+MOV       EVEN_BANK GRF_A0
 EXIT
