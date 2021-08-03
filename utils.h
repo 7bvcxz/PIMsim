@@ -18,6 +18,17 @@ float StringToNum(string str){
   return tmp;
 }
 
+/*  later,,,
+string* StringSplitter(string str_line){
+  string str[18];
+  int num_parts = (str_line.size()-1)/10 + 1;
+  for(int i=0; i<num_parts; i++)
+	str[i] = (str_line.substr(i*10, 9)).substr(0, str_line.substr(i*10, 9).find(' '));
+  
+  return str;
+}
+*/
+
 PIM_OPERATION StringToPIM_OP(string str){
   if(str == "ADD") return ADD;
   else if(str == "MUL") return MUL;

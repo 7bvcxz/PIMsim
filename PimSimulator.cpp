@@ -67,7 +67,7 @@ public:
 		cout << cmd_part[i] << " ";
 	  }
 	  cout << endl;	
-	  
+
 	  for(int j=0; j<NUM_PIMS; j++)
 	    flag = _PimUnit[j].Issue(cmd_part, num_parts);
 	 
@@ -117,9 +117,8 @@ void AddTest(PimSimulator PimSim){
   }
 
   sector_t err = 0;
-  for(int i=0; i<2048; i++){
+  for(int i=0; i<2048; i++)
 	err += C[i] - D[i];
-  }
 
   cout << "error : " << err << endl;
 }
