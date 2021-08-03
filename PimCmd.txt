@@ -20,17 +20,3 @@ RD        14
 RD        15
 RD        16
 RD        17
-RD        18
-RD        19
-RD        20
-RD        21
-RD        22
-RD        23
-RD        24
-RD        25
-RD        26
-RD        27
-RD        28
-RD        29
-RD        30
-RD        31

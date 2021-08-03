@@ -34,7 +34,8 @@ private:
   float *src1;
 
   float *physmem;
-  float *data;
+  float *even_data;
+  float *odd_data;
 
 public:
   PimUnit(){
@@ -45,7 +46,8 @@ public:
 	GRF_B = (float*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	SRF_A = (float*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	SRF_M = (float*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	data  = (float*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	even_data  = (float*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	odd_data   = (float*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   }
   
   void SetPhysmem(float* physmem){
@@ -100,15 +102,17 @@ public:
 
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){ // WR  3  156
-	  float WR = (float)StringToNum(pim_cmd[2]);
-	  memcpy(physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, &WR, 4);
-	  memcpy(data, physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
+	  float WR = (float)StringToNum(pim_cmd[3]);
+	  memcpy(physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, &WR, 4);
+	  memcpy(even_data, physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, 4);
+	  memcpy(odd_data,  physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4 + CELLS_PER_BK, 4);
 	}
 	else if(pim_cmd[0] == "RD"){ // RD  3
 	  float RD = 0;
-	  memcpy(&RD, physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
+	  memcpy(&RD, physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, 4);
 	  cout << "RD : " << RD << endl;
-	  memcpy(data, physmem + StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
+	  memcpy(even_data, physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, 4);
+	  memcpy(odd_data,  physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4 + CELLS_PER_BK, 4);
 	}
 
 	// NOP & JUMP // 
@@ -158,8 +162,8 @@ public:
 
 	// GRF_A, GRF_B
 	else if(CRF[PPC].PIM_OP>=4 && CRF[PPC].PIM_OP<=7){  // AAM mode
-	  int A_idx = StringToNum(pim_cmd[1])%8;
-	  int B_idx = StringToNum(pim_cmd[1])/8; // + RA % 2 * 4
+	  int A_idx = StringToNum(pim_cmd[2])%8;
+	  int B_idx = StringToNum(pim_cmd[2])/8; // + RA % 2 * 4
 	  
 	  if     (CRF[PPC].dst == 2)  dst = GRF_A + A_idx * 16;
 	  else if(CRF[PPC].dst == 3)  dst = GRF_B + B_idx * 16;
@@ -180,14 +184,17 @@ public:
 	}
 
 	// bank, SRF //
-	if     (CRF[PPC].dst  <= 1)	dst  = data; 
+	if     (CRF[PPC].dst  == 0)	dst  = even_data; 
+	else if(CRF[PPC].dst  == 1)	dst  = odd_data; 
 	else if(CRF[PPC].dst  == 4)	dst  = SRF_A;
 	else if(CRF[PPC].dst  == 5)	dst  = SRF_M;
-	if     (CRF[PPC].src0 <= 1)	src0 = data; 
+	if     (CRF[PPC].src0 == 0)	src0 = even_data; 
+	else if(CRF[PPC].src0 == 1)	src0 = odd_data; 
 	else if(CRF[PPC].src0 == 4) src0 = SRF_A;
 	else if(CRF[PPC].src0 == 5)	src0 = SRF_M;
 	if(CRF[PPC].PIM_OP < 4){ // ADD, MUL, MAC, MAD --> dst, src0, src1
-	  if     (CRF[PPC].src1 <= 1)	src1 = data; 
+	  if     (CRF[PPC].src1 == 0)	src1 = even_data; 
+	  else if(CRF[PPC].src1 == 1)	src1 = odd_data; 
 	  else if(CRF[PPC].src1 == 4)	src1 = SRF_A;
 	  else if(CRF[PPC].src1 == 5)	src1 = SRF_M;
 	}
