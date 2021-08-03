@@ -15,7 +15,6 @@ public:
   enum PIM_OPERAND src1;
   int imm0;
   int imm1;
-  uint8_t *physmem;
 };
 
 class PimUnit{
@@ -24,33 +23,33 @@ private:
   uint8_t PPC;
   int RA;
   int LC;
-  float *GRF_A;
-  float *GRF_B;
-  float *SRF_A;
-  float *SRF_M;
+  sector_t *GRF_A;
+  sector_t *GRF_B;
+  sector_t *SRF_A;
+  sector_t *SRF_M;
 
-  float *dst;
-  float *src0;
-  float *src1;
+  sector_t *dst;
+  sector_t *src0;
+  sector_t *src1;
 
-  float *physmem;
-  float *even_data;
-  float *odd_data;
+  sector_t *physmem;
+  sector_t *even_data;
+  sector_t *odd_data;
 
 public:
   PimUnit(){
 	PPC = 0;
 	LC  = -1;
 	RA  = 0;
-	GRF_A = (float*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	GRF_B = (float*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	SRF_A = (float*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	SRF_M = (float*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	even_data  = (float*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	odd_data   = (float*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	GRF_A = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	GRF_B = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	SRF_A = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	SRF_M = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	even_data  = (sector_t*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	odd_data   = (sector_t*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   }
   
-  void SetPhysmem(float* physmem){
+  void SetPhysmem(sector_t* physmem){
 	this->physmem = physmem;
   }
 
@@ -103,20 +102,19 @@ public:
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){
 	  for(int i=0; i<16; i++){
-		float WR = StringToNum(pim_cmd[i+2]);
-		memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + i, &WR, 4);
-		memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK + i, &WR, 4);
+		sector_t WR = (sector_t)StringToNum(pim_cmd[i+2]);
+		memcpy(physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + i, &WR, sizeof(sector_t));
+		memcpy(physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK + i, &WR, sizeof(sector_t));
 	  }
-	  even_data = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
-	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
+	  even_data = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
+	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
 	}
 	else if(pim_cmd[0] == "RD"){
-	  float RD = 0;
-	  cout << "haha: " << (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 << endl;
-	  memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
-	  even_data = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
-	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
-	  cout << "RD even_data[0] : " << RD << endl;
+	  //sector_t RD = 0;
+	  //memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL, sizeof(sector_t));
+	  //cout << "RD even_data[0] : " << RD << endl;
+	  even_data = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
+	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
 	}
 
 	// NOP & JUMP // 

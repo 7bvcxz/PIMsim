@@ -1,4 +1,9 @@
 #pragma once
+
+/////////////////- set unit size - ///////////////////
+typedef float			   sector_t;
+//////////////////////////////////////////////////////
+
 typedef unsigned char      uint8_t;
 typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
@@ -12,6 +17,7 @@ typedef unsigned int       uint32_t;
 #define COLS_PER_BK		  32
 #define CELLS_PER_BK	  ROWS_PER_BK * COLS_PER_BK	// 256
 #define SECTORS_PER_CELL  16
+#define SECTORS_PER_BK	  CELLS_PER_BK * SECTORS_PER_CELL
 
 #define NUM_PCHS	16
 #define NUM_BGS		NUM_PCHS * BGS_PER_PCH	// 64
@@ -20,7 +26,7 @@ typedef unsigned int       uint32_t;
 
 
 // SIZE IS BYTE
-#define SECTOR_SIZE		  4  // 4 byte = 32 bit
+#define SECTOR_SIZE		  sizeof(sector_t)
 #define CELL_SIZE		  SECTORS_PER_CELL * SECTOR_SIZE
 #define BANK_SIZE		  CELLS_PER_BK * CELL_SIZE				// 256 * 16 * 4
 #define PIM_PHYSMEM_SIZE  2 * BANK_SIZE							// 2 * 256 * 16 * 4

@@ -17,7 +17,7 @@ private:
   PimUnit _PimUnit[NUM_PIMS];
 
 public:
-  float *physmem;
+  sector_t *physmem;
   
   PimSimulator(){
 	clk = 0;
@@ -30,12 +30,12 @@ public:
   void PhysmemInit(){
 	cout << ">> initializing PHYSMEM...\n";
 
-	physmem = (float*)mmap(NULL, PHYSMEM_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	if (physmem == (float*) MAP_FAILED) perror("mmap");
+	physmem = (sector_t*)mmap(NULL, PHYSMEM_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	if (physmem == (sector_t*) MAP_FAILED) perror("mmap");
 	cout << ">> Allocated Space for PHYSMEM\n";
 	
 	for(int i=0; i<NUM_PIMS; i++)
-	  _PimUnit[i].SetPhysmem(physmem + i * PIM_PHYSMEM_SIZE / 4);
+	  _PimUnit[i].SetPhysmem(physmem + i * 2 * SECTORS_PER_BK);
 
 	cout << ">> Allocated to each PimUnit\n";
 
@@ -89,21 +89,21 @@ public:
 
 void AddTest(PimSimulator PimSim){
   srand((unsigned)time(NULL));
-  float A[2048];
-  float B[2048];
-  float C[2048];
-  float D[2048];
+  sector_t A[2048];
+  sector_t B[2048];
+  sector_t C[2048];
+  sector_t D[2048];
 
   for(int i=0; i<2048; i++){
-	A[i] = (float)rand() / RAND_MAX;
-	B[i] = (float)rand() / RAND_MAX;
+	A[i] = (sector_t)rand() / RAND_MAX;
+	B[i] = (sector_t)rand() / RAND_MAX;
 	C[i] = A[i] + B[i];
   }
 
   for(int i=0; i<NUM_PIMS; i++){
 	for(int j=0; j<16; j++){
-	   memcpy(PimSim.physmem + PIM_PHYSMEM_SIZE / 4 * i + j, &A[i*16 + j], 4);
-	   memcpy(PimSim.physmem + PIM_PHYSMEM_SIZE / 4 * i + j + 16, &B[i*16 + j], 4);
+	   memcpy(PimSim.physmem + 2 * SECTORS_PER_BK * i + j, &A[i*16 + j], sizeof(sector_t));
+	   memcpy(PimSim.physmem + 2 * SECTORS_PER_BK * i + j + 16, &B[i*16 + j], sizeof(sector_t));
 	}
   }
 
@@ -112,16 +112,16 @@ void AddTest(PimSimulator PimSim){
 
   for(int i=0; i<NUM_PIMS; i++){
 	for(int j=0; j<16; j++){
-	  memcpy(&D[i*16 + j], PimSim.physmem + PIM_PHYSMEM_SIZE / 4 * i + j, 4);
+	  memcpy(&D[i*16 + j], PimSim.physmem + 2 * SECTORS_PER_BK * i + j, sizeof(sector_t));
 	}
   }
 
-  float err = 0;
+  sector_t err = 0;
   for(int i=0; i<2048; i++){
 	err += C[i] - D[i];
   }
 
-  cout << "err : " << err << endl;
+  cout << "error : " << err << endl;
 }
 
 int main(){
