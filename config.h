@@ -22,8 +22,9 @@ typedef unsigned int       uint32_t;
 // SIZE IS BYTE
 #define SECTOR_SIZE		  4  // 4 byte = 32 bit
 #define CELL_SIZE		  SECTORS_PER_CELL * SECTOR_SIZE
+#define BANK_SIZE		  CELLS_PER_BK * CELL_SIZE				// 256 * 16 * 4
+#define PIM_PHYSMEM_SIZE  2 * BANK_SIZE							// 2 * 256 * 16 * 4
 #define PHYSMEM_SIZE	  NUM_BANKS * CELLS_PER_BK * CELL_SIZE	// 256 * 256 * 16 * 4
-#define PIM_PHYSMEM_SIZE  2 * CELLS_PER_BK * CELL_SIZE			// 2 * 256 * 16 * 4
 
 #define GRF_SIZE	8 * SECTORS_PER_CELL * SECTOR_SIZE
 #define SRF_SIZE	SECTORS_PER_CELL * SECTOR_SIZE

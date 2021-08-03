@@ -36,6 +36,7 @@ public:
 	
 	for(int i=0; i<NUM_PIMS; i++)
 	  _PimUnit[i].SetPhysmem(physmem + i * PIM_PHYSMEM_SIZE / 4);
+
 	cout << ">> Allocated to each PimUnit\n";
 
 	cout << "<< initialized PHYSMEM!\n\n";
@@ -44,7 +45,7 @@ public:
 
   void CrfInit(){
 	cout << ">> initializing PimUnit's CRF...\n";
-	for(int i=0; i<1; i++)
+	for(int i=0; i<NUM_PIMS; i++)
 	  this->_PimUnit[i].CrfInit(); 
 	cout << "<< initialized PimUnit's CRF!\n\n";
   }
@@ -67,7 +68,7 @@ public:
 	  }
 	  cout << endl;	
 	  
-	  for(int j=0; j<1; j++)
+	  for(int j=0; j<NUM_PIMS; j++)
 	    flag = _PimUnit[j].Issue(cmd_part, num_parts);
 	 
 	  if(flag == EXIT_END){
@@ -101,14 +102,26 @@ void AddTest(PimSimulator PimSim){
 
   for(int i=0; i<NUM_PIMS; i++){
 	for(int j=0; j<16; j++){
-	   memcpy(PimSim.physmem + 2 * CELLS_PER_BK * i + j, &A[i*16 + j], 4);
-	   memcpy(PimSim.physmem + 2 * CELLS_PER_BK * i + j, &B[i*16 + j + 16], 4);
+	   memcpy(PimSim.physmem + PIM_PHYSMEM_SIZE / 4 * i + j, &A[i*16 + j], 4);
+	   memcpy(PimSim.physmem + PIM_PHYSMEM_SIZE / 4 * i + j + 16, &B[i*16 + j], 4);
 	}
   }
 
   PimSim.CrfInit();
   PimSim.Run();
 
+  for(int i=0; i<NUM_PIMS; i++){
+	for(int j=0; j<16; j++){
+	  memcpy(&D[i*16 + j], PimSim.physmem + PIM_PHYSMEM_SIZE / 4 * i + j, 4);
+	}
+  }
+
+  float err = 0;
+  for(int i=0; i<2048; i++){
+	err += C[i] - D[i];
+  }
+
+  cout << "err : " << err << endl;
 }
 
 int main(){

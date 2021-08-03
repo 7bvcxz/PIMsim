@@ -107,14 +107,15 @@ public:
 		memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + i, &WR, 4);
 		memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK + i, &WR, 4);
 	  }
-	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 64);
-	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 64);
+	  even_data = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
+	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
 	}
 	else if(pim_cmd[0] == "RD"){
 	  float RD = 0;
+	  cout << "haha: " << (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 << endl;
 	  memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
-	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 64);
-	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 64);
+	  even_data = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
+	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4;
 	  cout << "RD even_data[0] : " << RD << endl;
 	}
 
