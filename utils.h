@@ -1,21 +1,21 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <string>
 #include <string.h>
 #include "config.h"
 using namespace std;
 
-#define C_NRML	"\033[0m"
-#define C_RED	"\033[031m"
-#define C_GREN	"\033[032m"
-#define C_YLLW	"\033[033m"
-#define C_BLUE	"\033[034m"
+#define C_NORMAL  "\033[0m"
+#define C_RED	  "\033[031m"
+#define C_GREEN	  "\033[032m"
+#define C_YELLOW  "\033[033m"
+#define C_BLUE	  "\033[034m"
 
-int StringToNum(string str){
-  int i = 0;
-  stringstream ssInt(str);
-  ssInt >> i;
-  return i;
+float StringToNum(string str){
+  float tmp = 0;
+  tmp = stof(str, NULL);
+  return tmp;
 }
 
 PIM_OPERATION StringToPIM_OP(string str){

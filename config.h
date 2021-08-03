@@ -2,12 +2,6 @@
 typedef unsigned char      uint8_t;
 typedef unsigned short     uint16_t;
 typedef unsigned int       uint32_t;
-typedef unsigned long long uint64_t;
-
-#define UINT8_MAX   0xffui8
-#define UINT16_MAX  0xffffui16
-#define UINT32_MAX  0xffffffffui32
-#define UINT64_MAX  0xffffffffffffffffui64
 
 #define NOP_END	    -1
 #define EXIT_END	-2

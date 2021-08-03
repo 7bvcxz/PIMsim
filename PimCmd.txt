@@ -1,8 +1,8 @@
-WR        3         156
+WR        3         1.01
 RD        3
-WR        4         300
+WR        4         2.02
 RD        4
-WR        5         71
+WR        5         3.03
 RD        5
 RD        2
 RD        3
@@ -20,3 +20,14 @@ RD        14
 RD        15
 RD        16
 RD        17
+RD        18
+RD        19
+RD        20
+RD        21
+RD        22
+RD        23
+RD        24
+RD        25
+RD        26
+RD        27
+RD        28

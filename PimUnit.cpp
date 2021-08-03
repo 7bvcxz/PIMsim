@@ -90,11 +90,11 @@ public:
 	  CRF[PPC].src0 = StringToOperand(mk_part[2]); 
 	}
 	else if(CRF[PPC].PIM_OP < 11){  // nop 
-	  CRF[PPC].imm0 = StringToNum(mk_part[1]);
+	  CRF[PPC].imm0 = (int)StringToNum(mk_part[1]);
 	}
 	else if(CRF[PPC].PIM_OP < 12){  // jump
-	  CRF[PPC].imm0 = PPC + StringToNum(mk_part[1]);
-	  CRF[PPC].imm1 = StringToNum(mk_part[2]);
+	  CRF[PPC].imm0 = PPC + (int)StringToNum(mk_part[1]);
+	  CRF[PPC].imm1 = (int)StringToNum(mk_part[2]);
 	}
   }
 
@@ -102,17 +102,17 @@ public:
 
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){ // WR  3  156
-	  float WR = (float)StringToNum(pim_cmd[3]);
-	  memcpy(physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, &WR, 4);
-	  memcpy(even_data, physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, 4);
-	  memcpy(odd_data,  physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4 + CELLS_PER_BK, 4);
+	  float WR = StringToNum(pim_cmd[2]);
+	  memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, &WR, 4);
+	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
+	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 4);
 	}
 	else if(pim_cmd[0] == "RD"){ // RD  3
 	  float RD = 0;
-	  memcpy(&RD, physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, 4);
-	  cout << "RD : " << RD << endl;
-	  memcpy(even_data, physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4, 4);
-	  memcpy(odd_data,  physmem + StringToNum(pim_cmd[2])*CELL_SIZE/4 + CELLS_PER_BK, 4);
+	  memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
+	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
+	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 4);
+	  cout << "I Read : " << RD << endl;
 	}
 
 	// NOP & JUMP // 
@@ -162,8 +162,8 @@ public:
 
 	// GRF_A, GRF_B
 	else if(CRF[PPC].PIM_OP>=4 && CRF[PPC].PIM_OP<=7){  // AAM mode
-	  int A_idx = StringToNum(pim_cmd[2])%8;
-	  int B_idx = StringToNum(pim_cmd[2])/8; // + RA % 2 * 4
+	  int A_idx = (int)StringToNum(pim_cmd[1])%8;
+	  int B_idx = (int)StringToNum(pim_cmd[1])/8; // + RA % 2 * 4
 	  
 	  if     (CRF[PPC].dst == 2)  dst = GRF_A + A_idx * 16;
 	  else if(CRF[PPC].dst == 3)  dst = GRF_B + B_idx * 16;
@@ -268,4 +268,5 @@ public:
   
   // ~ the end ~ //
 };
+
 
