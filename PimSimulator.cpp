@@ -47,12 +47,13 @@ public:
   }
 
   void Run(){
+	cout << ">> Run Simulator\n";
 	ifstream fp;
 	fp.open("PimCmd.txt");
 
 	string str;
 	while(getline(fp, str) && !fp.eof()){
-	  string cmd_part[3];
+	  string cmd_part[18];
 	  int num_parts = (str.size()-1)/10 + 1;
 	  int flag = 0;
 

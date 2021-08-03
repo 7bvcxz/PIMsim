@@ -102,17 +102,20 @@ public:
 
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){ // WR  3  156
-	  float WR = StringToNum(pim_cmd[2]);
-	  memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, &WR, 4);
-	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
-	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 4);
+	  for(int i=0; i<16; i++){
+		float WR = StringToNum(pim_cmd[i+2]);
+		memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + i, &WR, 4);
+		memcpy(physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK + i, &WR, 4);
+	  }
+	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 64);
+	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 64);
 	}
 	else if(pim_cmd[0] == "RD"){ // RD  3
 	  float RD = 0;
 	  memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
-	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 4);
-	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 4);
-	  cout << "I Read : " << RD << endl;
+	  memcpy(even_data, physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4, 64);
+	  memcpy(odd_data,  physmem + (int)StringToNum(pim_cmd[1])*CELL_SIZE/4 + CELLS_PER_BK, 64);
+	  cout << "RD even_data[0] : " << RD << endl;
 	}
 
 	// NOP & JUMP // 
@@ -173,7 +176,7 @@ public:
 	  else if(CRF[PPC].src1 == 3) src1 = GRF_B + B_idx * 16;
 	}
 	else{  // non-AAM mode
-	  if(CRF[PPC].dst >=10 && CRF[PPC].dst < 20)		dst = GRF_A + CRF[PPC].dst % 10 * 16;
+	  if(CRF[PPC].dst >=10 && CRF[PPC].dst < 20)		dst = GRF_A + CRF[PPC].dst % 10 * 16;	// %10 = GRF index
 	  else if(CRF[PPC].dst >= 20 && CRF[PPC].dst <30)	dst = GRF_B + CRF[PPC].dst % 10 * 16;  
 	  if(CRF[PPC].src0 >=10 && CRF[PPC].src0 < 20)		src0 = GRF_A + CRF[PPC].src0 % 10 * 16;
 	  else if(CRF[PPC].src0 >= 20 && CRF[PPC].src0 <30)	src0 = GRF_B + CRF[PPC].src0 % 10 * 16;
@@ -206,24 +209,27 @@ public:
 	  case(ADD_AAM):
 		_ADD();
 		break;
+
 	  case(MUL):
 	  case(MUL_AAM):
 		_MUL();
 		break;
+
 	  case(MAC):
 	  case(MAC_AAM):
 		_MAC();
 		break;
+
 	  case(MAD):
 	  case(MAD_AAM):
 		_MAD();
 		break;
+
 	  case(MOV):
 	  case(FILL):
 		_MOV();
 		break;
-	  case(EXIT):
-		break;
+
 	}
   }
 
@@ -238,7 +244,7 @@ public:
  
   void _MUL(){
 	for(int i=0; i<16; i++){
-	  *dst = *src0 * *src1;
+	  *dst = (*src0) * (*src1);
 	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
 	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
 	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
@@ -247,7 +253,7 @@ public:
 
   void _MAC(){
 	for(int i=0; i<16; i++){
-	  *dst += *src0 * *src1;
+	  *dst += (*src0) * (*src1);
 	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
 	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
 	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
