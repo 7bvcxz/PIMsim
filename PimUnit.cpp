@@ -23,10 +23,10 @@ private:
   uint8_t PPC;
   int RA;
   int LC;
-  sector_t *GRF_A;
-  sector_t *GRF_B;
-  sector_t *SRF_A;
-  sector_t *SRF_M;
+  sector_t *_GRF_A;
+  sector_t *_GRF_B;
+  sector_t *_SRF_A;
+  sector_t *_SRF_M;
 
   sector_t *dst;
   sector_t *src0;
@@ -41,10 +41,10 @@ public:
 	PPC = 0;
 	LC  = -1;
 	RA  = 0;
-	GRF_A = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	GRF_B = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	SRF_A = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	SRF_M = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_GRF_A = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_GRF_B = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_SRF_A = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_SRF_M = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	even_data  = (sector_t*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	odd_data   = (sector_t*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   }
@@ -88,10 +88,10 @@ public:
 	  CRF[PPC].dst  = StringToOperand(mk_part[1]);
 	  CRF[PPC].src0 = StringToOperand(mk_part[2]); 
 	}
-	else if(CRF[PPC].PIM_OP < 11){  // nop 
+	else if(CRF[PPC].PIM_OP == NOP){  // nop 
 	  CRF[PPC].imm0 = (int)StringToNum(mk_part[1]);
 	}
-	else if(CRF[PPC].PIM_OP < 12){  // jump
+	else if(CRF[PPC].PIM_OP == JUMP){  // jump
 	  CRF[PPC].imm0 = PPC + (int)StringToNum(mk_part[1]);
 	  CRF[PPC].imm1 = (int)StringToNum(mk_part[2]);
 	}
@@ -162,43 +162,80 @@ public:
 
 	if(CRF[PPC].PIM_OP == 12) return;  // EXIT
 
-	// GRF_A, GRF_B
+	// _GRF_A, _GRF_B
 	else if(CRF[PPC].PIM_OP>=4 && CRF[PPC].PIM_OP<=7){  // AAM mode
 	  int A_idx = (int)StringToNum(pim_cmd[1])%8;
-	  int B_idx = (int)StringToNum(pim_cmd[1])/8; // + RA % 2 * 4
+	  int B_idx = (int)StringToNum(pim_cmd[1])/8 + RA % 2 * 4;
 	  
-	  if     (CRF[PPC].dst == 2)  dst = GRF_A + A_idx * 16;
-	  else if(CRF[PPC].dst == 3)  dst = GRF_B + B_idx * 16;
-	  if     (CRF[PPC].src0 == 2) src0 = GRF_A + A_idx * 16;
-	  else if(CRF[PPC].src0 == 3) src0 = GRF_B + B_idx * 16;
-	  if     (CRF[PPC].src1 == 2) src1 = GRF_A + A_idx * 16;
-	  else if(CRF[PPC].src1 == 3) src1 = GRF_B + B_idx * 16;
+	  // comment
+	  if (CRF[PPC].dst == GRF_A)
+		dst = _GRF_A + A_idx * 16;
+	  else if(CRF[PPC].dst == GRF_B)
+		dst = _GRF_B + B_idx * 16;
+
+	  // comment
+	  if     (CRF[PPC].src0 == GRF_A) src0 = _GRF_A + A_idx * 16;
+	  else if(CRF[PPC].src0 == GRF_B) src0 = _GRF_B + B_idx * 16;
+	  if     (CRF[PPC].src1 == GRF_A) src1 = _GRF_A + A_idx * 16;
+	  else if(CRF[PPC].src1 == GRF_B) src1 = _GRF_B + B_idx * 16;
 	}
 	else{  // non-AAM mode
-	  if(CRF[PPC].dst >=10 && CRF[PPC].dst < 20)		dst = GRF_A + CRF[PPC].dst % 10 * 16;	// %10 = GRF index
-	  else if(CRF[PPC].dst >= 20 && CRF[PPC].dst <30)	dst = GRF_B + CRF[PPC].dst % 10 * 16;  
-	  if(CRF[PPC].src0 >=10 && CRF[PPC].src0 < 20)		src0 = GRF_A + CRF[PPC].src0 % 10 * 16;
-	  else if(CRF[PPC].src0 >= 20 && CRF[PPC].src0 <30)	src0 = GRF_B + CRF[PPC].src0 % 10 * 16;
+	  if(CRF[PPC].dst >=10 && CRF[PPC].dst < 20)		dst = _GRF_A + CRF[PPC].dst % 10 * 16;	// %10 = GRF index
+	  else if(CRF[PPC].dst >= 20 && CRF[PPC].dst <30)	dst = _GRF_B + CRF[PPC].dst % 10 * 16;  
+	  if(CRF[PPC].src0 >=10 && CRF[PPC].src0 < 20)		src0 = _GRF_A + CRF[PPC].src0 % 10 * 16;
+	  else if(CRF[PPC].src0 >= 20 && CRF[PPC].src0 <30)	src0 = _GRF_B + CRF[PPC].src0 % 10 * 16;
 	  if(CRF[PPC].PIM_OP < 4){ // ADD, MUL, MAC, MAD --> dst, src0, src1
-		if(CRF[PPC].src1 >=10 && CRF[PPC].src1 < 20)		src1 = GRF_A + CRF[PPC].src1 % 10 * 16;
-		else if(CRF[PPC].src1 >= 20 && CRF[PPC].src1 <30)	src1 = GRF_B + CRF[PPC].src1 % 10 * 16;	
+		if(CRF[PPC].src1 >=10 && CRF[PPC].src1 < 20)		src1 = _GRF_A + CRF[PPC].src1 % 10 * 16;
+		else if(CRF[PPC].src1 >= 20 && CRF[PPC].src1 <30)	src1 = _GRF_B + CRF[PPC].src1 % 10 * 16;	
 	  }
 	}
 
 	// bank, SRF //
-	if     (CRF[PPC].dst  == 0)	dst  = even_data; 
-	else if(CRF[PPC].dst  == 1)	dst  = odd_data; 
-	else if(CRF[PPC].dst  == 4)	dst  = SRF_A;
-	else if(CRF[PPC].dst  == 5)	dst  = SRF_M;
-	if     (CRF[PPC].src0 == 0)	src0 = even_data; 
-	else if(CRF[PPC].src0 == 1)	src0 = odd_data; 
-	else if(CRF[PPC].src0 == 4) src0 = SRF_A;
-	else if(CRF[PPC].src0 == 5)	src0 = SRF_M;
+	switch(CRF[PPC].dst){
+	  case(EVEN_BANK):
+		dst = even_data;
+		break;
+	  case(ODD_BANK):
+		dst = odd_data;
+		break;
+	  case(SRF_A):
+		dst = _SRF_A;
+		break;
+	  case(SRF_M):
+		dst = _SRF_M;
+		break;
+	}
+
+	switch(CRF[PPC].src0){
+	  case(EVEN_BANK):
+		src0 = even_data;
+		break;
+	  case(ODD_BANK):
+		src0 = odd_data;
+		break;
+	  case(SRF_A):
+		src0 = _SRF_A;
+		break;
+	  case(SRF_M):
+		src0 = _SRF_M;
+		break;
+	}
+	
 	if(CRF[PPC].PIM_OP < 4){ // ADD, MUL, MAC, MAD --> dst, src0, src1
-	  if     (CRF[PPC].src1 == 0)	src1 = even_data; 
-	  else if(CRF[PPC].src1 == 1)	src1 = odd_data; 
-	  else if(CRF[PPC].src1 == 4)	src1 = SRF_A;
-	  else if(CRF[PPC].src1 == 5)	src1 = SRF_M;
+	  switch(CRF[PPC].src1){
+		case(EVEN_BANK):
+		  src1 = even_data;
+		  break;
+		case(ODD_BANK):
+		  src1 = odd_data;
+		  break;
+		case(SRF_A):
+		  src1 = _SRF_A;
+		  break;
+		case(SRF_M):
+		  src1 = _SRF_M;
+		  break;
+	  }
 	}
   }
   
@@ -228,13 +265,11 @@ public:
 	  case(FILL):
 		_MOV();
 		break;
-
 	}
   }
 
   void _ADD(){
 	for(int i=0; i<16; i++){
-	  cout << *src0 << " + " << *src1 << endl;
 	  *dst = *src0 + *src1;
 	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
 	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;

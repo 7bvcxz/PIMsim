@@ -122,7 +122,7 @@ void AddTest(PimSimulator PimSim){
   for(int i=0; i<2048; i++)
 	err += C[i] - D[i];
 
-  cout << "error : " << err << endl;
+  cout << "error : " << (float)err << endl;
 }
 
 void AddAamTest(PimSimulator PimSim){
@@ -165,7 +165,7 @@ void AddAamTest(PimSimulator PimSim){
   for(int i=0; i<16384; i++)
 	err += C[i] - D[i];
 
-  cout << "error : " << err << endl;
+  cout << "error : " << (float)err << endl;
 }
 
 
