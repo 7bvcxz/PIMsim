@@ -107,8 +107,10 @@ void AddTest(PimSimulator PimSim){
 	}
   }
 
+  // PIM ~~~ //
   PimSim.CrfInit();
   PimSim.Run();
+  // Ended,, //
 
   for(int i=0; i<NUM_PIMS; i++){
 	for(int j=0; j<16; j++){
@@ -123,12 +125,57 @@ void AddTest(PimSimulator PimSim){
   cout << "error : " << err << endl;
 }
 
+void AddAamTest(PimSimulator PimSim){
+  srand((unsigned)time(NULL));
+  sector_t A[16384];
+  sector_t B[16384];
+  sector_t C[16384];
+  sector_t D[16384];
+
+  for(int i=0; i<16384; i++){
+	A[i] = (sector_t)rand() / RAND_MAX;
+	B[i] = (sector_t)rand() / RAND_MAX;
+	C[i] = A[i] + B[i];
+  }
+
+  for(int i=0; i<NUM_PIMS; i++){
+	for(int j=0; j<8; j++){
+	  for(int k=0; k<16; k++){
+		memcpy(PimSim.physmem + 2 * SECTORS_PER_BK * i + j * 16 + k, &A[i*8*16 + j*16 + k], sizeof(sector_t));
+		memcpy(PimSim.physmem + 2 * SECTORS_PER_BK * i + j * 16 + k + 8 * 16, &B[i*8*16 + j*16 + k], sizeof(sector_t));
+	  }
+	}
+  }
+
+  cout << "haha\n";
+  // PIM ~~~ //
+  PimSim.CrfInit();
+  PimSim.Run();
+  // Ended,, //
+
+  for(int i=0; i<NUM_PIMS; i++){
+	for(int j=0; j<8; j++){
+	  for(int k=0; k<16; k++){
+		memcpy(&D[i*8*16 + j*16 + k], PimSim.physmem + 2 * SECTORS_PER_BK * i + j * 16 + k, sizeof(sector_t));
+	  }
+	}
+  }
+
+  sector_t err = 0;
+  for(int i=0; i<16384; i++)
+	err += C[i] - D[i];
+
+  cout << "error : " << err << endl;
+}
+
+
 int main(){
   PimSimulator PimSim = PimSimulator();
   
   PimSim.PhysmemInit();
 
-  AddTest(PimSim);
+  //AddTest(PimSim);
+  AddAamTest(PimSim);
 
   return 0;
 }

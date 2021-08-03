@@ -1,5 +1,5 @@
 /////////////////- set unit size - ///////////////////
-typedef uint8_t			   sector_t;
+typedef float			   sector_t;
 //////////////////////////////////////////////////////
 
 #pragma once
@@ -12,6 +12,7 @@ typedef uint8_t			   sector_t;
 #define COLS_PER_BK		  32
 #define CELLS_PER_BK	  ROWS_PER_BK * COLS_PER_BK	// 256
 #define SECTORS_PER_CELL  16
+#define SECTORS_PER_ROW   COLS_PER_BK * SECTORS_PER_CELL
 #define SECTORS_PER_BK	  CELLS_PER_BK * SECTORS_PER_CELL
 
 #define NUM_PCHS	16

@@ -103,18 +103,18 @@ public:
 	if(pim_cmd[0] == "WR"){
 	  for(int i=0; i<16; i++){
 		sector_t WR = (sector_t)StringToNum(pim_cmd[i+2]);
-		memcpy(physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + i, &WR, sizeof(sector_t));
-		memcpy(physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK + i, &WR, sizeof(sector_t));
+		memcpy(physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + i, &WR, sizeof(sector_t));
+		memcpy(physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK + i, &WR, sizeof(sector_t));
 	  }
-	  even_data = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
-	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
+	  even_data = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
+	  odd_data  = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
 	}
 	else if(pim_cmd[0] == "RD"){
 	  //sector_t RD = 0;
 	  //memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL, sizeof(sector_t));
 	  //cout << "RD even_data[0] : " << RD << endl;
-	  even_data = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
-	  odd_data  = physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
+	  even_data = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
+	  odd_data  = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
 	}
 
 	// NOP & JUMP // 
