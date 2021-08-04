@@ -1,22 +1,13 @@
 MUL_AAM   GRF_A     EVEN_BANK SRF_A0
 JUMP      -1        7
 
-MUL_AAM   GRF_B     EVEN_BANK SRF_A1
+MAC_AAM   GRF_A     EVEN_BANK SRF_A1
 JUMP      -1        7
 
-MAC_AAM   GRF_A     GRF_A     GRF_B
+MAC_AAM   GRF_A     EVEN_BANK SRF_A2
 JUMP      -1        7
 
-MUL_AAM   GRF_B     EVEN_BANK SRF_A2
-JUMP      -1        7
-
-MAC_AAM   GRF_A     GRF_A     GRF_B
-JUMP      -1        7
-
-MUL_AAM   GRF_B     EVEN_BANK SRF_A3
-JUMP      -1        7
-
-MAC_AAM   GRF_A     GRF_A     GRF_B
+MAC_AAM   GRF_A     EVEN_BANK SRF_A3
 JUMP      -1        7
 
 MOV       EVEN_BANK GRF_A0

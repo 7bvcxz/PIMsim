@@ -6,6 +6,8 @@
 #include "config.h"
 using namespace std;
 
+#define ABS(x)	  ( ((x)<0)?-(x):(x) )
+
 #define C_NORMAL  "\033[0m"
 #define C_RED	  "\033[031m"
 #define C_GREEN	  "\033[032m"

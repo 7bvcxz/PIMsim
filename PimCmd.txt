@@ -16,15 +16,6 @@ RD        13
 RD        14
 RD        15
 
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-
 RD        16
 RD        17
 RD        18
@@ -34,15 +25,6 @@ RD        21
 RD        22
 RD        23
 
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-
 RD        24
 RD        25
 RD        26
@@ -51,15 +33,6 @@ RD        28
 RD        29
 RD        30
 RD        31
-
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
-RD        0
 
 RD        0
 RD        1

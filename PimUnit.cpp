@@ -66,9 +66,9 @@ public:
 
 	  for(int i=0; i< num_parts; i++){
 		mk_part[i] = (str.substr(i*10, 9)).substr(0, str.substr(i*10, 9).find(' '));
-		cout << mk_part[i] << " ";
+		//cout << mk_part[i] << " ";
 	  }
-	  cout << endl;	  
+	  //cout << endl;	  
 
 	  PushCrf(mk_part, num_parts);
 	  PPC += 1;
@@ -127,6 +127,7 @@ public:
 		LC = -1;
 		return NOP_END;
 	  }
+	  return 0;
 	}
 
 	else if(CRF[PPC].PIM_OP == JUMP){
@@ -172,16 +173,22 @@ public:
 	  int B_idx = (int)StringToNum(pim_cmd[1])/8 + RA % 2 * 4;
 	  
 	  // comment
-	  if (CRF[PPC].dst == GRF_A)
+	  if(CRF[PPC].dst == GRF_A)
 		dst = _GRF_A + A_idx * 16;
 	  else if(CRF[PPC].dst == GRF_B)
 		dst = _GRF_B + B_idx * 16;
 
 	  // comment
-	  if     (CRF[PPC].src0 == GRF_A) src0 = _GRF_A + A_idx * 16;
-	  else if(CRF[PPC].src0 == GRF_B) src0 = _GRF_B + B_idx * 16;
-	  if     (CRF[PPC].src1 == GRF_A) src1 = _GRF_A + A_idx * 16;
-	  else if(CRF[PPC].src1 == GRF_B) src1 = _GRF_B + B_idx * 16;
+	  if(CRF[PPC].src0 == GRF_A)
+		src0 = _GRF_A + A_idx * 16;
+	  else if(CRF[PPC].src0 == GRF_B)
+		src0 = _GRF_B + B_idx * 16;
+	  
+	  // comment
+	  if(CRF[PPC].src1 == GRF_A)
+		src1 = _GRF_A + A_idx * 16;
+	  else if(CRF[PPC].src1 == GRF_B)
+		src1 = _GRF_B + B_idx * 16;
 	}
 	else{  // non-AAM mode
 	  if(CRF[PPC].dst >=10 && CRF[PPC].dst < 20)		dst = _GRF_A + CRF[PPC].dst % 10 * 16;	// %10 = GRF index
@@ -212,7 +219,6 @@ public:
 	  src0 = _SRF_A + CRF[PPC].src0 % 10;
 	else if(CRF[PPC].src0 >= 40)
 	  src0 = _SRF_M + CRF[PPC].src0 % 10;
-
 	
 	if(CRF[PPC].PIM_OP < 8){ // ADD, MUL, MAC, MAD --> dst, src0, src1
 	  if(CRF[PPC].src1 == 0)
@@ -258,27 +264,27 @@ public:
   void _ADD(){
 	for(int i=0; i<16; i++){
 	  *dst = *src0 + *src1;
-	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
-	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
-	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
+	  if(CRF[PPC].dst < 30) dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 < 30) src0 += 1;
+	  if(CRF[PPC].src1 < 30) src1 += 1;
 	}
   }
  
   void _MUL(){
 	for(int i=0; i<16; i++){
 	  *dst = (*src0) * (*src1);
-	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
-	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
-	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
+	  if(CRF[PPC].dst < 30) dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 < 30) src0 += 1;
+	  if(CRF[PPC].src1 < 30) src1 += 1;
 	}
   }
 
   void _MAC(){
 	for(int i=0; i<16; i++){
 	  *dst += (*src0) * (*src1);
-	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
-	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
-	  if(CRF[PPC].src1 != 4 && CRF[PPC].src1 !=5) src1 += 1;
+	  if(CRF[PPC].dst < 30) dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 < 30) src0 += 1;
+	  if(CRF[PPC].src1 < 30) src1 += 1;
 	}
   }
 
@@ -289,8 +295,8 @@ public:
   void _MOV(){
 	for(int i=0; i<16; i++){
 	  *dst = *src0;
-	  if(CRF[PPC].dst  != 4 && CRF[PPC].dst  !=5) dst  += 1;  // checking SRF
-	  if(CRF[PPC].src0 != 4 && CRF[PPC].src0 !=5) src0 += 1;
+	  if(CRF[PPC].dst < 30)dst  += 1;  // checking SRF
+	  if(CRF[PPC].src0 < 30) src0 += 1;
 	}
   }
   

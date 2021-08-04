@@ -174,43 +174,48 @@ void GemvTest(PimSimulator PimSim){
   sector_t A[512][128];
   sector_t B[512];
   sector_t C[128];
+  sector_t _D[128];
   sector_t D[128];
 
-  for(int i=0; i<512; i++){
-	B[i] = (sector_t)rand() / RAND_MAX;
-	for(int j=0; j<128; j++)
-	  A[i][j] = (sector_t)rand() / RAND_MAX;
+  for(int m=0; m<512; m++){
+	B[m] = (sector_t)rand() / RAND_MAX;
+	for(int n=0; n<128; n++)
+	  A[m][n] = (sector_t)rand() / RAND_MAX;
   }
   
-  for(int j=0; j<128; j++)
-	for(int i=0; i<512; i++)
-	  C[j] += B[i] * A[i][j];
+  for(int m=0; m<512; m++)
+	for(int n=0; n<128; n++)
+	  C[n] += B[m] * A[m][n];
 
   for(int i=0; i<NUM_PIMS; i++){
 	for(int m=0; m<4; m++){
 	  for(int n=0; n<128; n++){
-		memcpy(PimSim.physmem + 2 * SECTORS_PER_BK * i + m * 128 + n, &A[m][n], sizeof(sector_t));
+		memcpy(PimSim.physmem + 2 * SECTORS_PER_BK * i + m * 128 + n, &A[i*4 + m][n], sizeof(sector_t));
 	  }
-	  PimSim._PimUnit[i]._SRF_A[m] = B[m];
+	  memcpy(PimSim._PimUnit[i]._SRF_A + m, &B[i*4 + m], sizeof(sector_t));
 	}
   }
-
-
 
   // PIM ~~~ //
   PimSim.CrfInit();
   PimSim.Run();
   // Ended,, //
 
-  for(int i=0; i<NUM_PIMS; i++)
-	for(int n=0; n<128; n++)
-	  memcpy(&D[i*128 + n], PimSim.physmem + 2 * SECTORS_PER_BK * i + n, sizeof(sector_t));
-
+  for(int i=0; i<NUM_PIMS; i++){
+	for(int j=0; j<128; j++){
+	  memcpy(&_D[j], PimSim.physmem + 2 * SECTORS_PER_BK * i + j, sizeof(sector_t));
+	  D[j] += _D[j];
+	}
+  }
+  
   sector_t err = 0;
-  for(int n=0; n<128; n++)
-	err += C[n] - D[n];
+  for(int n=0; n<128; n++){
+	cout << (float)(C[n]-D[n]) << endl;
+	err += ABS(C[n] - D[n]);
+  }
   
   cout << "error : " << (float)err << endl;
+
 }
 
 
@@ -225,4 +230,3 @@ int main(){
 
   return 0;
 }
-
