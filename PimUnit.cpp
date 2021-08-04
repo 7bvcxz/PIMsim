@@ -18,11 +18,12 @@ public:
 };
 
 class PimUnit{
-private:
+public:  
   PimInstruction CRF[32];
   uint8_t PPC;
   int RA;
   int LC;
+  
   sector_t *_GRF_A;
   sector_t *_GRF_B;
   sector_t *_SRF_A;
@@ -36,7 +37,6 @@ private:
   sector_t *even_data;
   sector_t *odd_data;
 
-public:
   PimUnit(){
 	PPC = 0;
 	LC  = -1;
@@ -61,6 +61,8 @@ public:
 	while(getline(fp, str) && !fp.eof()){
 	  string mk_part[4];
 	  int num_parts = (str.size()-1)/10 + 1;
+	  
+	  if(str.size() == 0) continue; // just to see CRF.txt easily
 
 	  for(int i=0; i< num_parts; i++){
 		mk_part[i] = (str.substr(i*10, 9)).substr(0, str.substr(i*10, 9).find(' '));
@@ -98,7 +100,7 @@ public:
   }
 
   int Issue(string* pim_cmd, int num_parts){
-
+	//cout << "a\n";
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){
 	  for(int i=0; i<16; i++){
@@ -145,16 +147,18 @@ public:
 	if(CRF[PPC].PIM_OP == EXIT)
 	  return EXIT_END;
 
-	// SET ADDR & EXECUTE // 
-	cout << "execute PPC : " << (int)PPC << endl;
+	// SET ADDR & EXECUTE //
+	//cout << "execute PPC : " << (int)PPC << endl;
 
+	//cout << "b\n";
 	SetOperandAddr(pim_cmd);
 
+	//cout << "c\n";
 	Execute();	
 	
 	PPC += 1;
 
-	cout << endl;
+	//cout << endl;
 	return 0;
  }
 
@@ -191,51 +195,34 @@ public:
 	}
 
 	// bank, SRF //
-	switch(CRF[PPC].dst){
-	  case(EVEN_BANK):
-		dst = even_data;
-		break;
-	  case(ODD_BANK):
-		dst = odd_data;
-		break;
-	  case(SRF_A):
-		dst = _SRF_A;
-		break;
-	  case(SRF_M):
-		dst = _SRF_M;
-		break;
-	}
+	if(CRF[PPC].dst == 0)
+	  dst = even_data;
+	else if(CRF[PPC].dst == 1)
+	  dst = odd_data;
+	else if(CRF[PPC].dst >= 30)
+	  dst = _SRF_A + CRF[PPC].dst % 10;
+	else if(CRF[PPC].dst >= 40)
+	  dst = _SRF_M + CRF[PPC].dst % 10;
 
-	switch(CRF[PPC].src0){
-	  case(EVEN_BANK):
-		src0 = even_data;
-		break;
-	  case(ODD_BANK):
-		src0 = odd_data;
-		break;
-	  case(SRF_A):
-		src0 = _SRF_A;
-		break;
-	  case(SRF_M):
-		src0 = _SRF_M;
-		break;
-	}
+	if(CRF[PPC].src0 == 0)
+	  src0 = even_data;
+	else if(CRF[PPC].src0 == 1)
+	  src0 = odd_data;
+	else if(CRF[PPC].src0 >= 30)
+	  src0 = _SRF_A + CRF[PPC].src0 % 10;
+	else if(CRF[PPC].src0 >= 40)
+	  src0 = _SRF_M + CRF[PPC].src0 % 10;
+
 	
-	if(CRF[PPC].PIM_OP < 4){ // ADD, MUL, MAC, MAD --> dst, src0, src1
-	  switch(CRF[PPC].src1){
-		case(EVEN_BANK):
-		  src1 = even_data;
-		  break;
-		case(ODD_BANK):
-		  src1 = odd_data;
-		  break;
-		case(SRF_A):
-		  src1 = _SRF_A;
-		  break;
-		case(SRF_M):
-		  src1 = _SRF_M;
-		  break;
-	  }
+	if(CRF[PPC].PIM_OP < 8){ // ADD, MUL, MAC, MAD --> dst, src0, src1
+	  if(CRF[PPC].src1 == 0)
+		src1 = even_data;
+	  else if(CRF[PPC].src1 == 1)
+		src1 = odd_data;
+	  else if(CRF[PPC].src1 >= 30)
+		src1 = _SRF_A + CRF[PPC].src1 % 10;
+	  else if(CRF[PPC].src1 >= 40)
+		src1 = _SRF_M + CRF[PPC].src1 % 10;
 	}
   }
   

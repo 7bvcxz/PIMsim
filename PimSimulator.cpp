@@ -10,13 +10,12 @@
 using namespace std;
 
 class PimSimulator{
-private:
+public:
   uint64_t clk;
   string pim_cmd_filename;
   string pim_micro_kernel_filename;
   PimUnit _PimUnit[NUM_PIMS];
 
-public:
   sector_t *physmem;
   
   PimSimulator(){
@@ -60,6 +59,8 @@ public:
 	  string cmd_part[18];
 	  int num_parts = (str.size()-1)/10 + 1;
 	  int flag = 0;
+
+	  if(str.size() == 0) continue; // just to see PimCmd.txt easily
 
 	  cout << "Cmd "<< clk+1 << " : ";
 	  for(int i=0; i<num_parts; i++){
@@ -147,7 +148,6 @@ void AddAamTest(PimSimulator PimSim){
 	}
   }
 
-  cout << "haha\n";
   // PIM ~~~ //
   PimSim.CrfInit();
   PimSim.Run();
@@ -168,6 +168,51 @@ void AddAamTest(PimSimulator PimSim){
   cout << "error : " << (float)err << endl;
 }
 
+void GemvTest(PimSimulator PimSim){
+  srand((unsigned)time(NULL));
+  // A[M][N], B[M], O[N]
+  sector_t A[512][128];
+  sector_t B[512];
+  sector_t C[128];
+  sector_t D[128];
+
+  for(int i=0; i<512; i++){
+	B[i] = (sector_t)rand() / RAND_MAX;
+	for(int j=0; j<128; j++)
+	  A[i][j] = (sector_t)rand() / RAND_MAX;
+  }
+  
+  for(int j=0; j<128; j++)
+	for(int i=0; i<512; i++)
+	  C[j] += B[i] * A[i][j];
+
+  for(int i=0; i<NUM_PIMS; i++){
+	for(int m=0; m<4; m++){
+	  for(int n=0; n<128; n++){
+		memcpy(PimSim.physmem + 2 * SECTORS_PER_BK * i + m * 128 + n, &A[m][n], sizeof(sector_t));
+	  }
+	  PimSim._PimUnit[i]._SRF_A[m] = B[m];
+	}
+  }
+
+
+
+  // PIM ~~~ //
+  PimSim.CrfInit();
+  PimSim.Run();
+  // Ended,, //
+
+  for(int i=0; i<NUM_PIMS; i++)
+	for(int n=0; n<128; n++)
+	  memcpy(&D[i*128 + n], PimSim.physmem + 2 * SECTORS_PER_BK * i + n, sizeof(sector_t));
+
+  sector_t err = 0;
+  for(int n=0; n<128; n++)
+	err += C[n] - D[n];
+  
+  cout << "error : " << (float)err << endl;
+}
+
 
 int main(){
   PimSimulator PimSim = PimSimulator();
@@ -175,7 +220,8 @@ int main(){
   PimSim.PhysmemInit();
 
   //AddTest(PimSim);
-  AddAamTest(PimSim);
+  //AddAamTest(PimSim);
+  GemvTest(PimSim);
 
   return 0;
 }

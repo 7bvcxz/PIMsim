@@ -1,13 +1,24 @@
-MOV       GRF_A0    EVEN_BANK
-MOV       GRF_A1    EVEN_BANK
-MOV       GRF_A2    EVEN_BANK
-MOV       GRF_A3    EVEN_BANK
-MOV       GRF_A4    EVEN_BANK
-MOV       GRF_A5    EVEN_BANK
-MOV       GRF_A6    EVEN_BANK
-MOV       GRF_A7    EVEN_BANK
-ADD_AAM   GRF_A     EVEN_BANK GRF_A
+MUL_AAM   GRF_A     EVEN_BANK SRF_A0
 JUMP      -1        7
+
+MUL_AAM   GRF_B     EVEN_BANK SRF_A1
+JUMP      -1        7
+
+MAC_AAM   GRF_A     GRF_A     GRF_B
+JUMP      -1        7
+
+MUL_AAM   GRF_B     EVEN_BANK SRF_A2
+JUMP      -1        7
+
+MAC_AAM   GRF_A     GRF_A     GRF_B
+JUMP      -1        7
+
+MUL_AAM   GRF_B     EVEN_BANK SRF_A3
+JUMP      -1        7
+
+MAC_AAM   GRF_A     GRF_A     GRF_B
+JUMP      -1        7
+
 MOV       EVEN_BANK GRF_A0
 MOV       EVEN_BANK GRF_A1
 MOV       EVEN_BANK GRF_A2
@@ -16,4 +27,5 @@ MOV       EVEN_BANK GRF_A4
 MOV       EVEN_BANK GRF_A5
 MOV       EVEN_BANK GRF_A6
 MOV       EVEN_BANK GRF_A7
+
 EXIT

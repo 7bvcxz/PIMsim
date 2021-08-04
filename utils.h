@@ -50,8 +50,6 @@ PIM_OPERAND StringToOperand(string str){
   else if(str == "EVEN_BANK") return EVEN_BANK;
   else if(str == "GRF_A") return GRF_A;
   else if(str == "GRF_B") return GRF_B;
-  else if(str == "SRF_A") return SRF_A;
-  else if(str == "SRF_M") return SRF_M;
   else if(str == "GRF_A0") return GRF_A0;
   else if(str == "GRF_A1") return GRF_A1;
   else if(str == "GRF_A2") return GRF_A2;
@@ -68,4 +66,20 @@ PIM_OPERAND StringToOperand(string str){
   else if(str == "GRF_B5") return GRF_B5;
   else if(str == "GRF_B6") return GRF_B6;
   else if(str == "GRF_B7") return GRF_B7;
+  else if(str == "SRF_A0") return SRF_A0;
+  else if(str == "SRF_A1") return SRF_A1;
+  else if(str == "SRF_A2") return SRF_A2;
+  else if(str == "SRF_A3") return SRF_A3;
+  else if(str == "SRF_A4") return SRF_A4;
+  else if(str == "SRF_A5") return SRF_A5;
+  else if(str == "SRF_A6") return SRF_A6;
+  else if(str == "SRF_A7") return SRF_A7;
+  else if(str == "SRF_M0") return SRF_M0;
+  else if(str == "SRF_M1") return SRF_M1;
+  else if(str == "SRF_M2") return SRF_M2;
+  else if(str == "SRF_M3") return SRF_M3;
+  else if(str == "SRF_M4") return SRF_M4;
+  else if(str == "SRF_M5") return SRF_M5;
+  else if(str == "SRF_M6") return SRF_M6;
+  else if(str == "SRF_M7") return SRF_M7;
 }
