@@ -20,42 +20,47 @@ public:
 class PimUnit{
 public:  
   PimInstruction CRF[32];
+  string pim_micro_kernel_filename;
   uint8_t PPC;
   int RA;
   int LC;
   
-  sector_t *_GRF_A;
-  sector_t *_GRF_B;
-  sector_t *_SRF_A;
-  sector_t *_SRF_M;
+  unit_t *_GRF_A;
+  unit_t *_GRF_B;
+  unit_t *_SRF_A;
+  unit_t *_SRF_M;
 
-  sector_t *dst;
-  sector_t *src0;
-  sector_t *src1;
+  unit_t *dst;
+  unit_t *src0;
+  unit_t *src1;
 
-  sector_t *physmem;
-  sector_t *even_data;
-  sector_t *odd_data;
+  unit_t *physmem;
+  unit_t *even_data;
+  unit_t *odd_data;
 
   PimUnit(){
 	PPC = 0;
 	LC  = -1;
 	RA  = 0;
-	_GRF_A = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	_GRF_B = (sector_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	_SRF_A = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	_SRF_M = (sector_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	even_data  = (sector_t*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	odd_data   = (sector_t*)mmap(NULL, CELL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_GRF_A = (unit_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_GRF_B = (unit_t*)mmap(NULL, GRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_SRF_A = (unit_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	_SRF_M = (unit_t*)mmap(NULL, SRF_SIZE,  PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	even_data  = (unit_t*)mmap(NULL, WORD_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	odd_data   = (unit_t*)mmap(NULL, WORD_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   }
-  
-  void SetPhysmem(sector_t* physmem){
+ 
+  void SetPmkFilename(string pim_micro_kernel_filename){
+	this->pim_micro_kernel_filename = pim_micro_kernel_filename;
+  }
+
+  void SetPhysmem(unit_t* physmem){
 	this->physmem = physmem;
   }
 
   void CrfInit(){	
 	ifstream fp;
-	fp.open("CRF.txt");
+	fp.open(pim_micro_kernel_filename);
 	
 	string str;
 	while(getline(fp, str) && !fp.eof()){
@@ -104,19 +109,16 @@ public:
 	// DRAM READ & WRITE // 
 	if(pim_cmd[0] == "WR"){
 	  for(int i=0; i<16; i++){
-		sector_t WR = (sector_t)StringToNum(pim_cmd[i+2]);
-		memcpy(physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + i, &WR, sizeof(sector_t));
-		memcpy(physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK + i, &WR, sizeof(sector_t));
+		unit_t WR = (unit_t)StringToNum(pim_cmd[i+2]);
+		memcpy(physmem + RA*UNITS_PER_ROW + (int)StringToNum(pim_cmd[1])*UNITS_PER_WORD + i, &WR, sizeof(unit_t));
+		memcpy(physmem + RA*UNITS_PER_ROW + (int)StringToNum(pim_cmd[1])*UNITS_PER_WORD + UNITS_PER_BK + i, &WR, sizeof(unit_t));
 	  }
-	  even_data = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
-	  odd_data  = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
+	  even_data = physmem + RA*UNITS_PER_ROW + (int)StringToNum(pim_cmd[1])*UNITS_PER_WORD;
+	  odd_data  = physmem + RA*UNITS_PER_ROW + (int)StringToNum(pim_cmd[1])*UNITS_PER_WORD + UNITS_PER_BK;
 	}
 	else if(pim_cmd[0] == "RD"){
-	  //sector_t RD = 0;
-	  //memcpy(&RD, physmem + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL, sizeof(sector_t));
-	  //cout << "RD even_data[0] : " << RD << endl;
-	  even_data = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL;
-	  odd_data  = physmem + RA*SECTORS_PER_ROW + (int)StringToNum(pim_cmd[1])*SECTORS_PER_CELL + SECTORS_PER_BK;
+	  even_data = physmem + RA*UNITS_PER_ROW + (int)StringToNum(pim_cmd[1])*UNITS_PER_WORD;
+	  odd_data  = physmem + RA*UNITS_PER_ROW + (int)StringToNum(pim_cmd[1])*UNITS_PER_WORD + UNITS_PER_BK;
 	}
 
 	// NOP & JUMP // 
@@ -149,59 +151,65 @@ public:
 	  return EXIT_END;
 
 	// SET ADDR & EXECUTE //
-	//cout << "execute PPC : " << (int)PPC << endl;
-
-	//cout << "b\n";
+	
 	SetOperandAddr(pim_cmd);
 
-	//cout << "c\n";
 	Execute();	
 	
 	PPC += 1;
 
-	//cout << endl;
-	return 0;
+	return (int)PPC;
  }
 
   void SetOperandAddr(string* pim_cmd){
-
-	if(CRF[PPC].PIM_OP == 12) return;  // EXIT
-
-	// _GRF_A, _GRF_B
-	else if(CRF[PPC].PIM_OP>=4 && CRF[PPC].PIM_OP<=7){  // AAM mode
+	// set _GRF_A, _GRF_B operand address when AAM mode
+	if(CRF[PPC].PIM_OP>=4 && CRF[PPC].PIM_OP<=7){
 	  int A_idx = (int)StringToNum(pim_cmd[1])%8;
 	  int B_idx = (int)StringToNum(pim_cmd[1])/8 + RA % 2 * 4;
 	  
-	  // comment
+	  // set dst address (AAM)
 	  if(CRF[PPC].dst == GRF_A)
 		dst = _GRF_A + A_idx * 16;
 	  else if(CRF[PPC].dst == GRF_B)
 		dst = _GRF_B + B_idx * 16;
 
-	  // comment
+	  // set src0 address (AAM)
 	  if(CRF[PPC].src0 == GRF_A)
 		src0 = _GRF_A + A_idx * 16;
 	  else if(CRF[PPC].src0 == GRF_B)
 		src0 = _GRF_B + B_idx * 16;
 	  
-	  // comment
+	  // set src1 address (AAM)
 	  if(CRF[PPC].src1 == GRF_A)
 		src1 = _GRF_A + A_idx * 16;
 	  else if(CRF[PPC].src1 == GRF_B)
 		src1 = _GRF_B + B_idx * 16;
 	}
-	else{  // non-AAM mode
-	  if(CRF[PPC].dst >=10 && CRF[PPC].dst < 20)		dst = _GRF_A + CRF[PPC].dst % 10 * 16;	// %10 = GRF index
-	  else if(CRF[PPC].dst >= 20 && CRF[PPC].dst <30)	dst = _GRF_B + CRF[PPC].dst % 10 * 16;  
-	  if(CRF[PPC].src0 >=10 && CRF[PPC].src0 < 20)		src0 = _GRF_A + CRF[PPC].src0 % 10 * 16;
-	  else if(CRF[PPC].src0 >= 20 && CRF[PPC].src0 <30)	src0 = _GRF_B + CRF[PPC].src0 % 10 * 16;
-	  if(CRF[PPC].PIM_OP < 4){ // ADD, MUL, MAC, MAD --> dst, src0, src1
-		if(CRF[PPC].src1 >=10 && CRF[PPC].src1 < 20)		src1 = _GRF_A + CRF[PPC].src1 % 10 * 16;
-		else if(CRF[PPC].src1 >= 20 && CRF[PPC].src1 <30)	src1 = _GRF_B + CRF[PPC].src1 % 10 * 16;	
+	// set _GRF_A, _GRF_B operand address when non-AAM mode
+	else{
+	  // set dst address
+	  if(CRF[PPC].dst >=10 && CRF[PPC].dst < 20)
+		dst = _GRF_A + CRF[PPC].dst % 10 * 16;	// % 10 = GRF index
+	  else if(CRF[PPC].dst >= 20 && CRF[PPC].dst <30)
+		dst = _GRF_B + CRF[PPC].dst % 10 * 16;  
+
+	  // set src0 address
+	  if(CRF[PPC].src0 >=10 && CRF[PPC].src0 < 20)
+		src0 = _GRF_A + CRF[PPC].src0 % 10 * 16;
+	  else if(CRF[PPC].src0 >= 20 && CRF[PPC].src0 <30)
+		src0 = _GRF_B + CRF[PPC].src0 % 10 * 16;
+
+	  // set src1 address
+	  if(CRF[PPC].PIM_OP < 4){ // PIM_OP == ADD, MUL, MAC, MAD -> uses src1 for operand
+		if(CRF[PPC].src1 >=10 && CRF[PPC].src1 < 20)
+		  src1 = _GRF_A + CRF[PPC].src1 % 10 * 16;
+		else if(CRF[PPC].src1 >= 20 && CRF[PPC].src1 <30)
+		  src1 = _GRF_B + CRF[PPC].src1 % 10 * 16;	
 	  }
 	}
 
-	// bank, SRF //
+	// set EVEN_BANK, ODD_BANK, SRF operand address 
+	// set dst address
 	if(CRF[PPC].dst == 0)
 	  dst = even_data;
 	else if(CRF[PPC].dst == 1)
@@ -211,6 +219,7 @@ public:
 	else if(CRF[PPC].dst >= 40)
 	  dst = _SRF_M + CRF[PPC].dst % 10;
 
+	// set src0 address
 	if(CRF[PPC].src0 == 0)
 	  src0 = even_data;
 	else if(CRF[PPC].src0 == 1)
@@ -220,7 +229,8 @@ public:
 	else if(CRF[PPC].src0 >= 40)
 	  src0 = _SRF_M + CRF[PPC].src0 % 10;
 	
-	if(CRF[PPC].PIM_OP < 8){ // ADD, MUL, MAC, MAD --> dst, src0, src1
+	// set src1 address only if PIM_OP == ADD, MUL, MAC, MAD -> uses src1 for operand
+	if(CRF[PPC].PIM_OP < 8){
 	  if(CRF[PPC].src1 == 0)
 		src1 = even_data;
 	  else if(CRF[PPC].src1 == 1)
@@ -264,7 +274,7 @@ public:
   void _ADD(){
 	for(int i=0; i<16; i++){
 	  *dst = *src0 + *src1;
-	  if(CRF[PPC].dst < 30) dst  += 1;  // checking SRF
+	  if(CRF[PPC].dst < 30) dst  += 1;	// if operand == SRF -> do not change
 	  if(CRF[PPC].src0 < 30) src0 += 1;
 	  if(CRF[PPC].src1 < 30) src1 += 1;
 	}
@@ -273,7 +283,7 @@ public:
   void _MUL(){
 	for(int i=0; i<16; i++){
 	  *dst = (*src0) * (*src1);
-	  if(CRF[PPC].dst < 30) dst  += 1;  // checking SRF
+	  if(CRF[PPC].dst < 30) dst  += 1;	// if operand == SRF -> do not change
 	  if(CRF[PPC].src0 < 30) src0 += 1;
 	  if(CRF[PPC].src1 < 30) src1 += 1;
 	}
@@ -282,7 +292,7 @@ public:
   void _MAC(){
 	for(int i=0; i<16; i++){
 	  *dst += (*src0) * (*src1);
-	  if(CRF[PPC].dst < 30) dst  += 1;  // checking SRF
+	  if(CRF[PPC].dst < 30) dst  += 1;	// if operand == SRF -> do not change
 	  if(CRF[PPC].src0 < 30) src0 += 1;
 	  if(CRF[PPC].src1 < 30) src1 += 1;
 	}
@@ -295,7 +305,7 @@ public:
   void _MOV(){
 	for(int i=0; i<16; i++){
 	  *dst = *src0;
-	  if(CRF[PPC].dst < 30)dst  += 1;  // checking SRF
+	  if(CRF[PPC].dst < 30) dst += 1;	// if operand == SRF -> do not change
 	  if(CRF[PPC].src0 < 30) src0 += 1;
 	}
   }
