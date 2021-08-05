@@ -1,22 +1,19 @@
-#ifndef __UTILS_H
-#define __UTILS_H
+#ifndef UTILS_H_
+#define UTILS_H_
 
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <string>
-#include <string.h>
-#include "config.h"
-using namespace std;
+#include "./config.h"
 
-#define ABS(x)	  ( ((x)<0)?-(x):(x) )
+#define ABS(x)   ((x) < 0 ? -(x) : (x))
 
-#define C_NORMAL  "\033[0m"
-#define C_RED	  "\033[031m"
-#define C_GREEN	  "\033[032m"
-#define C_YELLOW  "\033[033m"
-#define C_BLUE	  "\033[034m"
-
+#define C_NORMAL "\033[0m"
+#define C_RED    "\033[031m"
+#define C_GREEN  "\033[032m"
+#define C_YELLOW "\033[033m"
+#define C_BLUE   "\033[034m"
 
 /*  later,,,
 string* StringSplitter(string str_line){
@@ -29,9 +26,9 @@ string* StringSplitter(string str_line){
 }
 */
 
-float StringToNum(string str);
-PIM_OPERATION StringToPIM_OP(string str);
-PIM_OPERAND StringToOperand(string str);
-int StringToIndex(string str);
+float StringToNum(std::string str);
+PIM_OPERATION StringToPIM_OP(std::string str);
+PIM_OPERAND StringToOperand(std::string str);
+int StringToIndex(std::string str);
 
-#endif
+#endif  // UTILS_H_

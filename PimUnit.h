@@ -1,21 +1,18 @@
-#ifndef __PIM_UNIT_H
-#define __PIM_UNIT_H
+#ifndef PIMUNIT_H_
+#define PIMUNIT_H_
 
+#include <sys/mman.h>
 #include <iostream>
 #include <fstream>
-#include <string.h>
+#include <string>
 #include <vector>
 #include <sstream>
-#include <sys/mman.h>
-
-#include "config.h"
-#include "utils.h"
-
-#define PIM_MMAP_PROT (PROT_READ | PROT_WRITE)
-#define PIM_MMAP_FLAGS (MAP_ANON | MAP_PRIVATE)
+#include <cstring>
+#include "./config.h"
+#include "./utils.h"
 
 class PimInstruction{
-  public:
+ public:
     PIM_OPERATION PIM_OP;
 
     PIM_OPERAND dst;
@@ -32,23 +29,23 @@ class PimInstruction{
 };
 
 class PimUnit{
-  public:  
-	PimUnit();
-	void SetPmkFilename(string pim_micro_kernel_filename);
-	void SetPhysmem(unit_t* physmem);
-	void CrfInit();
-	void PushCrf(string* mk_part, int num_parts);
-	int Issue(string* pim_cmd, int num_parts);
-	void SetOperandAddr(string* pim_cmd);
-	void Execute();
-	void _ADD();
-	void _MUL();
-	void _MAC();
-	void _MAD();
-	void _MOV();
+ public:
+    PimUnit();
+    void SetPmkFilename(std::string pim_micro_kernel_filename);
+    void SetPhysmem(unit_t* physmem);
+    void CrfInit();
+    void PushCrf(std::string* mk_part, int num_parts);
+    int Issue(std::string* pim_cmd, int num_parts);
+    void SetOperandAddr(std::string* pim_cmd);
+    void Execute();
+    void _ADD();
+    void _MUL();
+    void _MAC();
+    void _MAD();
+    void _MOV();
 
     PimInstruction CRF[32];
-    string pim_micro_kernel_filename;
+    std::string pim_micro_kernel_filename;
     uint8_t PPC;
     int RA;
     int LC;
@@ -67,4 +64,4 @@ class PimUnit{
     unit_t *odd_data;
 };
 
-#endif
+#endif  // PIMUNIT_H_

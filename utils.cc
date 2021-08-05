@@ -1,30 +1,44 @@
 #include "utils.h"
 
-float StringToNum(string str){
+float StringToNum(std::string str) {
   float tmp = 0;
   tmp = stof(str, NULL);
   return tmp;
 }
 
-PIM_OPERATION StringToPIM_OP(string str) {
-    std::cout << std::endl << str << std::endl;
-    if(str == "ADD") return PIM_OPERATION::ADD;
-    else if(str == "MUL") return PIM_OPERATION::MUL;
-    else if(str == "MAC") return PIM_OPERATION::MAC;
-    else if(str == "MAD") return PIM_OPERATION::MAD;
-    else if(str == "ADD_AAM") return PIM_OPERATION::ADD_AAM;
-    else if(str == "MUL_AAM") return PIM_OPERATION::MUL_AAM;
-    else if(str == "MAC_AAM") return PIM_OPERATION::MAC_AAM;
-    else if(str == "MAD_AAM") return PIM_OPERATION::MAD_AAM;
-    else if(str == "MOV") return PIM_OPERATION::MOV;
-    else if(str == "FILL") return PIM_OPERATION::FILL;
-    else if(str == "NOP") return PIM_OPERATION::NOP;
-    else if(str == "JUMP") return PIM_OPERATION::JUMP;
-    else if(str == "EXIT") return PIM_OPERATION::EXIT;
-    else return PIM_OPERATION::NOP;
+PIM_OPERATION StringToPIM_OP(std::string str) {
+    // std::cout << std::endl << str << std::endl;
+    if (str == "ADD")
+        return PIM_OPERATION::ADD;
+    else if (str == "MUL")
+        return PIM_OPERATION::MUL;
+    else if (str == "MAC")
+        return PIM_OPERATION::MAC;
+    else if (str == "MAD")
+        return PIM_OPERATION::MAD;
+    else if (str == "ADD_AAM")
+        return PIM_OPERATION::ADD_AAM;
+    else if (str == "MUL_AAM")
+        return PIM_OPERATION::MUL_AAM;
+    else if (str == "MAC_AAM")
+        return PIM_OPERATION::MAC_AAM;
+    else if (str == "MAD_AAM")
+        return PIM_OPERATION::MAD_AAM;
+    else if (str == "MOV")
+        return PIM_OPERATION::MOV;
+    else if (str == "FILL")
+        return PIM_OPERATION::FILL;
+    else if (str == "NOP")
+        return PIM_OPERATION::NOP;
+    else if (str == "JUMP")
+        return PIM_OPERATION::JUMP;
+    else if (str == "EXIT")
+        return PIM_OPERATION::EXIT;
+    else
+        return PIM_OPERATION::NOP;
 }
 
-PIM_OPERAND StringToOperand(string str) {
+PIM_OPERAND StringToOperand(std::string str) {
     if (str.find("ODD_BANK") != std::string::npos)
         return PIM_OPERAND::ODD_BANK;
     else if (str.find("EVEN_BANK") != std::string::npos)
@@ -41,7 +55,7 @@ PIM_OPERAND StringToOperand(string str) {
         return PIM_OPERAND::NONE;
 }
 
-int StringToIndex(string str) {
+int StringToIndex(std::string str) {
     if (str.find("0") != std::string::npos)
         return 0;
     else if (str.find("1") != std::string::npos)
