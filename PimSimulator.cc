@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <string.h>
-#include "config.h"
-#include "PimUnit.cpp"
-using namespace std;
 
-// should use "g++ -std=c++11 PimSimulator.cpp" for need of some library
+#include "config.h"
+#include "PimUnit.h"
+
+using namespace std;
 
 class PimSimulator{
 public:
@@ -203,7 +203,7 @@ void GemvTest(PimSimulator PimSim){
 	  for(int n=0; n<128; n++){
 		memcpy(PimSim.physmem + 2 * UNITS_PER_BK * i + m * 128 + n, &A[i*4 + m][n], sizeof(unit_t));
 	  }
-	  memcpy(PimSim._PimUnit[i]._SRF_A + m, &B[i*4 + m], sizeof(unit_t));
+	  memcpy(PimSim._PimUnit[i]._SRF_M + m, &B[i*4 + m], sizeof(unit_t));
 	}
   }
 

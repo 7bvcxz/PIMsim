@@ -1,3 +1,6 @@
+#ifndef __UTILS_H
+#define __UTILS_H
+
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -14,11 +17,6 @@ using namespace std;
 #define C_YELLOW  "\033[033m"
 #define C_BLUE	  "\033[034m"
 
-float StringToNum(string str){
-  float tmp = 0;
-  tmp = stof(str, NULL);
-  return tmp;
-}
 
 /*  later,,,
 string* StringSplitter(string str_line){
@@ -31,57 +29,9 @@ string* StringSplitter(string str_line){
 }
 */
 
-PIM_OPERATION StringToPIM_OP(string str){
-  if(str == "ADD") return ADD;
-  else if(str == "MUL") return MUL;
-  else if(str == "MAC") return MAC;
-  else if(str == "MAD") return MAD;
-  else if(str == "ADD_AAM") return ADD_AAM;
-  else if(str == "MUL_AAM") return MUL_AAM;
-  else if(str == "MAC_AAM") return MAC_AAM;
-  else if(str == "MAD_AAM") return MAD_AAM;
-  else if(str == "MOV") return MOV;
-  else if(str == "FILL") return FILL;
-  else if(str == "NOP") return NOP;
-  else if(str == "JUMP") return JUMP;
-  else if(str == "EXIT") return EXIT;
-}
+float StringToNum(string str);
+PIM_OPERATION StringToPIM_OP(string str);
+PIM_OPERAND StringToOperand(string str);
+int StringToIndex(string str);
 
-PIM_OPERAND StringToOperand(string str){
-  if(str == "ODD_BANK") return ODD_BANK;
-  else if(str == "EVEN_BANK") return EVEN_BANK;
-  else if(str == "GRF_A") return GRF_A;
-  else if(str == "GRF_B") return GRF_B;
-  else if(str == "GRF_A0") return GRF_A0;
-  else if(str == "GRF_A1") return GRF_A1;
-  else if(str == "GRF_A2") return GRF_A2;
-  else if(str == "GRF_A3") return GRF_A3;
-  else if(str == "GRF_A4") return GRF_A4;
-  else if(str == "GRF_A5") return GRF_A5;
-  else if(str == "GRF_A6") return GRF_A6;
-  else if(str == "GRF_A7") return GRF_A7;
-  else if(str == "GRF_B0") return GRF_B0;
-  else if(str == "GRF_B1") return GRF_B1;
-  else if(str == "GRF_B2") return GRF_B2;
-  else if(str == "GRF_B3") return GRF_B3;
-  else if(str == "GRF_B4") return GRF_B4;
-  else if(str == "GRF_B5") return GRF_B5;
-  else if(str == "GRF_B6") return GRF_B6;
-  else if(str == "GRF_B7") return GRF_B7;
-  else if(str == "SRF_A0") return SRF_A0;
-  else if(str == "SRF_A1") return SRF_A1;
-  else if(str == "SRF_A2") return SRF_A2;
-  else if(str == "SRF_A3") return SRF_A3;
-  else if(str == "SRF_A4") return SRF_A4;
-  else if(str == "SRF_A5") return SRF_A5;
-  else if(str == "SRF_A6") return SRF_A6;
-  else if(str == "SRF_A7") return SRF_A7;
-  else if(str == "SRF_M0") return SRF_M0;
-  else if(str == "SRF_M1") return SRF_M1;
-  else if(str == "SRF_M2") return SRF_M2;
-  else if(str == "SRF_M3") return SRF_M3;
-  else if(str == "SRF_M4") return SRF_M4;
-  else if(str == "SRF_M5") return SRF_M5;
-  else if(str == "SRF_M6") return SRF_M6;
-  else if(str == "SRF_M7") return SRF_M7;
-}
+#endif

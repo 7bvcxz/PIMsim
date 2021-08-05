@@ -1,3 +1,6 @@
+#ifndef __CONFIG_H
+#define __CONFIG_H
+
 /////////////////- set unit size - ///////////////////
 typedef float		unit_t;
 #define debug_mode
@@ -31,15 +34,30 @@ typedef float		unit_t;
 #define GRF_SIZE	8 * UNITS_PER_WORD * UNIT_SIZE
 #define SRF_SIZE	UNITS_PER_WORD * UNIT_SIZE
 
-enum PIM_OPERATION {ADD=0, MUL, MAC, MAD, ADD_AAM, MUL_AAM, MAC_AAM, MAD_AAM, MOV, FILL, NOP, JUMP, EXIT};
-enum PIM_OPERAND   {EVEN_BANK=0, ODD_BANK, GRF_A, GRF_B, 
-					GRF_A0=10, GRF_A1, GRF_A2, GRF_A3, GRF_A4, GRF_A5, GRF_A6, GRF_A7,
-					GRF_B0=20, GRF_B1, GRF_B2, GRF_B3, GRF_B4, GRF_B5, GRF_B6, GRF_B7,
-					SRF_A0=30, SRF_A1, SRF_A2, SRF_A3, SRF_A4, SRF_A5, SRF_A6, SRF_A7,
-					SRF_M0=40, SRF_M1, SRF_M2, SRF_M3, SRF_M4, SRF_M5, SRF_M6, SRF_M7
-					};
+enum class PIM_OPERATION {
+    ADD,
+    MUL,
+    MAC,
+    MAD,
+    ADD_AAM,
+    MUL_AAM,
+    MAC_AAM,
+    MAD_AAM,
+    MOV,
+    FILL,
+    NOP,
+    JUMP,
+    EXIT
+};
 
+enum class PIM_OPERAND {
+    EVEN_BANK,
+    ODD_BANK,
+    GRF_A,
+    GRF_B,
+    SRF_A,
+    SRF_M,
+    NONE
+};
 
-
-
-
+#endif
