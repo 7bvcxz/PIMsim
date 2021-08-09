@@ -32,22 +32,24 @@ typedef float    unit_t;
 #define PHYSMEM_SIZE      (NUM_BANKS * BANK_SIZE)       // 256 * 256 * 16 * 4
 
 #define GRF_SIZE          (8 * UNITS_PER_WORD * UNIT_SIZE)
-#define SRF_SIZE          (UNITS_PER_WORD * UNIT_SIZE)
+#define SRF_SIZE          (8 * UNIT_SIZE)
 
 enum class PIM_OPERATION {
     ADD,
     MUL,
     MAC,
     MAD,
-    ADD_AAM,
-    MUL_AAM,
-    MAC_AAM,
-    MAD_AAM,
     MOV,
     FILL,
     NOP,
     JUMP,
     EXIT
+};
+
+enum class PIM_OP_TYPE {
+    CONTROL,
+    DATA,
+    ALU
 };
 
 enum class PIM_OPERAND {

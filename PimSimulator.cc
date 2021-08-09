@@ -106,65 +106,69 @@ class PimSimulator {
 };
 
 void AddTest(PimSimulator PimSim) {
-    unit_t A[2048];
-    unit_t B[2048];
-    unit_t C[2048];
-    unit_t D[2048];
+    // A[N] + B[N] = C[N]
+    int N = 2048;
+    unit_t *A = (unit_t*) malloc(N * sizeof(unit_t));
+    unit_t *B = (unit_t*) malloc(N * sizeof(unit_t));
+    unit_t *C_CPU = (unit_t*) malloc(N * sizeof(unit_t));
+    unit_t *C_PIM = (unit_t*) malloc(N * sizeof(unit_t));
 
-    for (int i = 0; i < 2048; i++) {
-        A[i] = (unit_t)rand() / RAND_MAX;
-        B[i] = (unit_t)rand() / RAND_MAX;
-        C[i] = A[i] + B[i];
+    for (int n = 0; n < N; n++) {
+        A[n] = (unit_t)rand() / RAND_MAX;
+        B[n] = (unit_t)rand() / RAND_MAX;
+        C_CPU[n] = A[n] + B[n];
     }
 
-    for (int i = 0; i < NUM_PIMS; i++) {
-        for (int j = 0; j < 16; j++) {
-            int offset = 2 * UNITS_PER_BK * i + j;
-            std::memcpy(PimSim.physmem + offset, &A[i*16+j], sizeof(unit_t));
-            std::memcpy(PimSim.physmem + offset+16, &B[i*16+j], sizeof(unit_t));
+    for (int p = 0; p < NUM_PIMS; p++) {
+        for (int n = 0; n < N/NUM_PIMS; n++) {
+            int offset = 2 * UNITS_PER_BK * p + n;
+            std::memcpy(PimSim.physmem + offset,
+                &A[p*N/NUM_PIMS + n], sizeof(unit_t));
+            std::memcpy(PimSim.physmem + offset + N/NUM_PIMS,
+                &B[p*N/NUM_PIMS + n], sizeof(unit_t));
         }
     }
 
-  // PIM ~~~ //
-  PimSim.CrfInit();
-  PimSim.Run();
-  // Ended,, //
+    // PIM ~~~ //
+    PimSim.CrfInit();
+    PimSim.Run();
+    // Ended,, //
 
-    for (int i = 0; i < NUM_PIMS; i++) {
-        for (int j = 0; j < 16; j++) {
-            std::memcpy(&D[i*16 + j],
-                PimSim.physmem + 2 * UNITS_PER_BK * i + j, sizeof(unit_t));
+    for (int p = 0; p < NUM_PIMS; p++) {
+        for (int n = 0; n < N/NUM_PIMS; n++) {
+            std::memcpy(&C_PIM[p*N/NUM_PIMS + n],
+                PimSim.physmem + 2 * UNITS_PER_BK * p + n, sizeof(unit_t));
         }
     }
 
     unit_t err = 0;
-    for (int i = 0; i < 2048; i++)
-        err += C[i] - D[i];
+    for (int n = 0; n < N; n++)
+        err += ABS(C_CPU[n] - C_PIM[n]);
 
     std::cout << "error : " << static_cast<float>(err) << std::endl;
 }
 
 void AddAamTest(PimSimulator PimSim) {
-    unit_t A[16384];
-    unit_t B[16384];
-    unit_t C[16384];
-    unit_t D[16384];
+    // A[n] + B[n] = C[n]
+    int N = 16384;
+    unit_t *A = (unit_t*) malloc(N * sizeof(unit_t));
+    unit_t *B = (unit_t*) malloc(N * sizeof(unit_t));
+    unit_t *C_CPU = (unit_t*) malloc(N * sizeof(unit_t));
+    unit_t *C_PIM = (unit_t*) malloc(N * sizeof(unit_t));
 
-    for (int i = 0; i < 16384; i++) {
-        A[i] = (unit_t)rand() / RAND_MAX;
-        B[i] = (unit_t)rand() / RAND_MAX;
-        C[i] = A[i] + B[i];
+    for (int n = 0; n < N; n++) {
+        A[n] = (unit_t)rand() / RAND_MAX;
+        B[n] = (unit_t)rand() / RAND_MAX;
+        C_CPU[n] = A[n] + B[n];
     }
 
-    for (int i = 0; i < NUM_PIMS; i++) {
-        for (int j = 0; j < 8; j++) {
-            for (int k = 0; k < 16; k++) {
-                int offset = 2 * UNITS_PER_BK * i + j * 16 + k;
-                std::memcpy(PimSim.physmem + offset,
-                    &A[i*8*16 + j*16 + k], sizeof(unit_t));
-                std::memcpy(PimSim.physmem + offset + 8 * 16,
-                    &B[i*8*16 + j*16 + k], sizeof(unit_t));
-            }
+    for (int p = 0; p < NUM_PIMS; p++) {
+        for (int n = 0; n < N/NUM_PIMS; n++) {
+            int offset = 2 * UNITS_PER_BK * p + n;
+            std::memcpy(PimSim.physmem + offset,
+                &A[p*N/NUM_PIMS + n], sizeof(unit_t));
+            std::memcpy(PimSim.physmem + offset + N/NUM_PIMS,
+                &B[p*N/NUM_PIMS + n], sizeof(unit_t));
         }
     }
 
@@ -173,74 +177,74 @@ void AddAamTest(PimSimulator PimSim) {
   PimSim.Run();
   // Ended,, //
 
-    for (int i = 0; i < NUM_PIMS; i++) {
-        for (int j = 0; j < 8; j++) {
-            for (int k = 0; k < 16; k++) {
-                std::memcpy(&D[i*8*16 + j*16 + k],
-                    PimSim.physmem + 2 * UNITS_PER_BK * i + j * 16 + k,
-                    sizeof(unit_t));
-            }
+    for (int p = 0; p < NUM_PIMS; p++) {
+        for (int n = 0; n < N/NUM_PIMS; n++) {
+            std::memcpy(&C_PIM[p*N/NUM_PIMS + n],
+                PimSim.physmem + 2 * UNITS_PER_BK * p + n,
+                sizeof(unit_t));
         }
     }
 
     unit_t err = 0;
-    for (int i = 0; i < 16384; i++)
-        err += C[i] - D[i];
+    for (int n = 0; n < N; n++)
+        err += ABS(C_CPU[n] - C_PIM[n]);
 
     std::cout << "error : " << static_cast<float>(err) << std::endl;
 }
 
 void GemvTest(PimSimulator PimSim) {
-    // A[M][N], B[M], O[N]
-    unit_t A[512][128];
-    unit_t B[512];
-    unit_t C[128];
-    unit_t _D[128];
-    unit_t D[128];
+    // A[N][M] x B[M] = C[N]
+    int M = 512;
+    int N = 128;
 
-    for (int m = 0; m < 512; m++) {
+    unit_t *A = (unit_t*) malloc(N * M * sizeof(unit_t));
+    unit_t *B = (unit_t*) malloc(M * sizeof(unit_t));
+    unit_t *C_CPU = (unit_t*) malloc(N * sizeof(unit_t));
+    unit_t *C_PIM = (unit_t*) malloc(N * sizeof(unit_t));
+
+    for (int m = 0; m < M; m++) {
         B[m] = (unit_t)((double)rand() / RAND_MAX * 100);
-        for (int n = 0; n < 128; n++)
-            A[m][n] = (unit_t)((double)rand() / RAND_MAX * 100);
+        for (int n = 0; n < N; n++)
+            A[n * M + m] = (unit_t)((double)rand() / RAND_MAX * 100);
     }
 
-    for (int m = 0; m < 512; m++)
-        for (int n = 0; n < 128; n++)
-            C[n] += B[m] * A[m][n];
+    for (int m = 0; m < M; m++)
+        for (int n = 0; n < N; n++)
+            C_CPU[n] += B[m] * A[n * M + m];
 
-    for (int i = 0; i < NUM_PIMS; i++) {
-        for (int m = 0; m < 4; m++) {
-            for (int n = 0; n < 128; n++) {
-                std::memcpy(PimSim.physmem + 2 * UNITS_PER_BK * i + m * 128 + n,
-                    &A[i*4 + m][n], sizeof(unit_t));
+    for (int p = 0; p < NUM_PIMS; p++) {
+        for (int m = 0; m < M/NUM_PIMS; m++) {
+            for (int n = 0; n < N; n++) {
+                // Set bank data
+                std::memcpy(PimSim.physmem + 2 * UNITS_PER_BK * p + m * N + n,
+                    &A[n * M + p*M/NUM_PIMS + m], sizeof(unit_t));
             }
-            std::memcpy(PimSim._PimUnit[i]._SRF_M + m,
-                &B[i*4 + m], sizeof(unit_t));
+            // Set SRF registers
+            std::memcpy(PimSim._PimUnit[p]._SRF_M + m,
+                &B[p*M/NUM_PIMS + m], sizeof(unit_t));
         }
     }
 
-  // PIM ~~~ //
-  PimSim.CrfInit();
-  PimSim.Run();
-  // Ended,, //
+    // PIM ~~~ //
+    PimSim.CrfInit();
+    PimSim.Run();
+    // Ended,, //
 
-    for (int i = 0; i < NUM_PIMS; i++) {
-        for (int j = 0; j < 128; j++) {
-            memcpy(&_D[j],
-                PimSim.physmem + 2 * UNITS_PER_BK * i + j, sizeof(unit_t));
-            D[j] += _D[j];
-        }
+    for (int n = 0; n < N; n++) {
+        C_PIM[n] = 0;
+        for (int p = 0; p < NUM_PIMS; p++)
+            C_PIM[n] += PimSim.physmem[2 * UNITS_PER_BK * p + n];
     }
 
     unit_t err = 0;
-    for (int n = 0; n < 128; n++) {
+    for (int n = 0; n < N; n++) {
 #ifdef debug_mode
-        std::cout << static_cast<float>(C[n]) << "\t"
-             << static_cast<float>(D[n]) << "\t sub : "
-             << static_cast<float>(C[n]) - static_cast<float>(D[n])
+        std::cout << static_cast<float>(C_CPU[n]) << "\t"
+             << static_cast<float>(C_PIM[n]) << "\t sub : "
+             << static_cast<float>(C_CPU[n]) - static_cast<float>(C_PIM[n])
              << std::endl;
 #endif
-        err += ABS(C[n] - D[n]);
+        err += ABS(C_CPU[n] - C_PIM[n]);
     }
     std::cout << "error : " << static_cast<float>(err) << std::endl;
 }

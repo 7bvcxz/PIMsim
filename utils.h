@@ -28,6 +28,7 @@ string* StringSplitter(string str_line){
 
 float StringToNum(std::string str);
 PIM_OPERATION StringToPIM_OP(std::string str);
+bool CheckAam(std::string str);
 PIM_OPERAND StringToOperand(std::string str);
 int StringToIndex(std::string str);
 

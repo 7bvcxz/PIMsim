@@ -14,6 +14,8 @@
 class PimInstruction{
  public:
     PIM_OPERATION PIM_OP;
+    PIM_OP_TYPE pim_op_type;
+    bool is_aam;
 
     PIM_OPERAND dst;
     PIM_OPERAND src0;

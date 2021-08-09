@@ -12,22 +12,6 @@ PimUnit::PimUnit() {
     _SRF_M = (unit_t*) malloc(SRF_SIZE);
     even_data = (unit_t*) malloc(WORD_SIZE);
     odd_data = (unit_t*) malloc(WORD_SIZE);
-
-    /*
-    
-    _GRF_A = (unit_t*)mmap(NULL, GRF_SIZE, PROT_READ | PROT_WRITE,
-                                  MAP_ANON | MAP_PRIVATE, -1, 0);
-    _GRF_B = (unit_t*)mmap(NULL, GRF_SIZE, PROT_READ | PROT_WRITE,
-                                  MAP_ANON | MAP_PRIVATE, -1, 0);
-    _SRF_A = (unit_t*)mmap(NULL, SRF_SIZE, PROT_READ | PROT_WRITE,
-                                  MAP_ANON | MAP_PRIVATE, -1, 0);
-    _SRF_M = (unit_t*)mmap(NULL, SRF_SIZE, PROT_READ | PROT_WRITE,
-                                  MAP_ANON | MAP_PRIVATE, -1, 0);
-    even_data = (unit_t*)mmap(NULL, WORD_SIZE, PROT_READ | PROT_WRITE,
-                                  MAP_ANON | MAP_PRIVATE, -1, 0);
-    odd_data = (unit_t*)mmap(NULL, WORD_SIZE, PROT_READ | PROT_WRITE,
-                                  MAP_ANON | MAP_PRIVATE, -1, 0);
-    */
 }
  
 void PimUnit::SetPmkFilename(std::string pim_micro_kernel_filename) {
@@ -65,16 +49,14 @@ void PimUnit::CrfInit() {
 
 void PimUnit::PushCrf(std::string* mk_part, int num_parts) {
     CRF[PPC].PIM_OP = StringToPIM_OP(mk_part[0]);
+    CRF[PPC].is_aam = CheckAam(mk_part[0]);
 
     switch (CRF[PPC].PIM_OP) {
         case PIM_OPERATION::ADD:
         case PIM_OPERATION::MUL:
         case PIM_OPERATION::MAC:
         case PIM_OPERATION::MAD:
-        case PIM_OPERATION::ADD_AAM:
-        case PIM_OPERATION::MUL_AAM:
-        case PIM_OPERATION::MAC_AAM:
-        case PIM_OPERATION::MAD_AAM:
+            CRF[PPC].pim_op_type = PIM_OP_TYPE::ALU;
             CRF[PPC].dst  = StringToOperand(mk_part[1]);
             CRF[PPC].src0 = StringToOperand(mk_part[2]);
             CRF[PPC].src1 = StringToOperand(mk_part[3]);
@@ -84,17 +66,23 @@ void PimUnit::PushCrf(std::string* mk_part, int num_parts) {
             break;
         case PIM_OPERATION::MOV:
         case PIM_OPERATION::FILL:
+            CRF[PPC].pim_op_type = PIM_OP_TYPE::DATA;
             CRF[PPC].dst  = StringToOperand(mk_part[1]);
             CRF[PPC].src0 = StringToOperand(mk_part[2]);
             CRF[PPC].dst_idx  = StringToIndex(mk_part[1]);
             CRF[PPC].src0_idx = StringToIndex(mk_part[2]);
             break;
         case PIM_OPERATION::NOP:
+            CRF[PPC].pim_op_type = PIM_OP_TYPE::CONTROL;
             CRF[PPC].imm0 = StringToNum(mk_part[1]);
             break;
         case PIM_OPERATION::JUMP:
+            CRF[PPC].pim_op_type = PIM_OP_TYPE::CONTROL;
             CRF[PPC].imm0 = PPC + StringToNum(mk_part[1]);
             CRF[PPC].imm1 = StringToNum(mk_part[2]);
+            break;
+        case PIM_OPERATION::EXIT:
+            CRF[PPC].pim_op_type = PIM_OP_TYPE::CONTROL;
             break;
         default:
             break;
@@ -160,10 +148,7 @@ int PimUnit::Issue(std::string* pim_cmd, int num_parts) {
 
 void PimUnit::SetOperandAddr(std::string* pim_cmd) {
     // set _GRF_A, _GRF_B operand address when AAM mode
-    if (CRF[PPC].PIM_OP == PIM_OPERATION::ADD_AAM ||
-        CRF[PPC].PIM_OP == PIM_OPERATION::MUL_AAM ||
-        CRF[PPC].PIM_OP == PIM_OPERATION::MAC_AAM ||
-        CRF[PPC].PIM_OP == PIM_OPERATION::MAD_AAM) {
+    if (CRF[PPC].is_aam) {
         int CA = StringToNum(pim_cmd[1]);
         int A_idx = CA % 8;
         int B_idx = CA / 8 + RA % 2 * 4;
@@ -200,7 +185,7 @@ void PimUnit::SetOperandAddr(std::string* pim_cmd) {
 
         // set src1 address
         // PIM_OP == ADD, MUL, MAC, MAD -> uses src1 for operand
-        if (CRF[PPC].PIM_OP < PIM_OPERATION::ADD_AAM) {
+        if (CRF[PPC].pim_op_type == PIM_OP_TYPE::ALU) {
             if (CRF[PPC].src1 == PIM_OPERAND::GRF_A)
                 src1 = _GRF_A + CRF[PPC].src1_idx * 16;
             else if (CRF[PPC].src1 == PIM_OPERAND::GRF_B)
@@ -208,30 +193,22 @@ void PimUnit::SetOperandAddr(std::string* pim_cmd) {
         }
     }
 
-    // set EVEN_BANK, ODD_BANK, SRF operand address
+    // set EVEN_BANK, ODD_BANK, operand address
     // set dst address
     if (CRF[PPC].dst == PIM_OPERAND::EVEN_BANK)
         dst = even_data;
     else if (CRF[PPC].dst == PIM_OPERAND::ODD_BANK)
         dst = odd_data;
-    else if (CRF[PPC].dst == PIM_OPERAND::SRF_A)
-        dst = _SRF_A + CRF[PPC].dst_idx;
-    else if (CRF[PPC].dst == PIM_OPERAND::SRF_M)
-        dst = _SRF_M + CRF[PPC].dst_idx;
 
     // set src0 address
     if (CRF[PPC].src0 == PIM_OPERAND::EVEN_BANK)
         src0 = even_data;
     else if (CRF[PPC].src0 == PIM_OPERAND::ODD_BANK)
         src0 = odd_data;
-    else if (CRF[PPC].src0 == PIM_OPERAND::SRF_A)
-        src0 = _SRF_A + CRF[PPC].src0_idx;
-    else if (CRF[PPC].src0 == PIM_OPERAND::SRF_M)
-        src0 = _SRF_M + CRF[PPC].src0_idx;
 
-    // set src1 address only if PIM_OP == ADD, MUL, MAC, MAD
+    // set src1 address only if PIM_OP_TYPE == ALU
     //  -> uses src1 for operand
-    if (CRF[PPC].PIM_OP < PIM_OPERATION::MOV) {
+    if (CRF[PPC].pim_op_type == PIM_OP_TYPE::ALU) {
         if (CRF[PPC].src1 == PIM_OPERAND::EVEN_BANK)
             src1 = even_data;
         else if (CRF[PPC].src1 == PIM_OPERAND::ODD_BANK)
@@ -246,19 +223,15 @@ void PimUnit::SetOperandAddr(std::string* pim_cmd) {
 void PimUnit::Execute() {
     switch (CRF[PPC].PIM_OP) {
         case PIM_OPERATION::ADD:
-        case PIM_OPERATION::ADD_AAM:
             _ADD();
             break;
         case PIM_OPERATION::MUL:
-        case PIM_OPERATION::MUL_AAM:
             _MUL();
             break;
         case PIM_OPERATION::MAC:
-        case PIM_OPERATION::MAC_AAM:
             _MAC();
             break;
         case PIM_OPERATION::MAD:
-        case PIM_OPERATION::MAD_AAM:
             _MAD();
             break;
         case PIM_OPERATION::MOV:
@@ -271,47 +244,32 @@ void PimUnit::Execute() {
 }
 
 void PimUnit::_ADD() {
-    for (int i = 0; i < 16; i++) {
-        *dst = *src0 + *src1;
-
-        if (CRF[PPC].dst < PIM_OPERAND::SRF_A)
-            dst += 1;    // if operand == SRF -> do not change
-
-        if (CRF[PPC].src0 < PIM_OPERAND::SRF_A)
-            src0 += 1;
-
-        if (CRF[PPC].src1 < PIM_OPERAND::SRF_A)
-            src1 += 1;
+    if (CRF[PPC].src1 == PIM_OPERAND::SRF_A) {
+        for (int i = 0; i < UNITS_PER_WORD; i++)
+            dst[i] = src0[i] + src1[0];
+    } else {
+        for (int i = 0; i < UNITS_PER_WORD; i++)
+            dst[i] = src0[i] + src1[i];
     }
 }
 
 void PimUnit::_MUL() {
-    for (int i = 0; i < 16; i++) {
-        *dst = (*src0) * (*src1);
-
-        if (CRF[PPC].dst < PIM_OPERAND::SRF_A)
-            dst += 1;    // if operand == SRF -> do not change
-
-        if (CRF[PPC].src0 < PIM_OPERAND::SRF_A)
-            src0 += 1;
-
-        if (CRF[PPC].src1 < PIM_OPERAND::SRF_A)
-            src1 += 1;
+    if (CRF[PPC].src1 == PIM_OPERAND::SRF_M) {
+        for (int i = 0; i < UNITS_PER_WORD; i++)
+            dst[i] = src0[i] * src1[0];
+    } else {
+        for (int i = 0; i < UNITS_PER_WORD; i++)
+            dst[i] = src0[i] * src1[i];
     }
 }
 
 void PimUnit::_MAC() {
-    for (int i = 0; i < 16; i++) {
-        *dst += (*src0) * (*src1);
-
-        if (CRF[PPC].dst < PIM_OPERAND::SRF_A)
-            dst += 1;    // if operand == SRF -> do not change
-
-        if (CRF[PPC].src0 < PIM_OPERAND::SRF_A)
-            src0 += 1;
-
-        if (CRF[PPC].src1 < PIM_OPERAND::SRF_A)
-            src1 += 1;
+    if (CRF[PPC].src1 == PIM_OPERAND::SRF_M) {
+        for (int i = 0; i < UNITS_PER_WORD; i++)
+            dst[i] += src0[i] * src1[0];
+    } else {
+        for (int i = 0; i < UNITS_PER_WORD; i++)
+            dst[i] += src0[i] * src1[i];
     }
 }
 
@@ -320,13 +278,7 @@ void PimUnit::_MAD() {
 }
 
 void PimUnit::_MOV() {
-    for (int i = 0; i < 16; i++) {
-        *dst = *src0;
-
-        if (CRF[PPC].dst < PIM_OPERAND::SRF_A)
-            dst += 1;    // if operand == SRF -> do not change
-
-        if (CRF[PPC].src0 < PIM_OPERAND::SRF_A)
-            src0 += 1;
+    for (int i = 0; i < UNITS_PER_WORD; i++) {
+        dst[i] = src0[i];
     }
 }

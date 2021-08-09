@@ -8,22 +8,14 @@ float StringToNum(std::string str) {
 
 PIM_OPERATION StringToPIM_OP(std::string str) {
     // std::cout << std::endl << str << std::endl;
-    if (str == "ADD")
+    if (str == "ADD" || str == "ADD_AAM")
         return PIM_OPERATION::ADD;
-    else if (str == "MUL")
+    else if (str == "MUL" || str == "MUL_AAM")
         return PIM_OPERATION::MUL;
-    else if (str == "MAC")
+    else if (str == "MAC" || str == "MAC_AAM")
         return PIM_OPERATION::MAC;
-    else if (str == "MAD")
+    else if (str == "MAD" || str == "MAD_AAM")
         return PIM_OPERATION::MAD;
-    else if (str == "ADD_AAM")
-        return PIM_OPERATION::ADD_AAM;
-    else if (str == "MUL_AAM")
-        return PIM_OPERATION::MUL_AAM;
-    else if (str == "MAC_AAM")
-        return PIM_OPERATION::MAC_AAM;
-    else if (str == "MAD_AAM")
-        return PIM_OPERATION::MAD_AAM;
     else if (str == "MOV")
         return PIM_OPERATION::MOV;
     else if (str == "FILL")
@@ -36,6 +28,13 @@ PIM_OPERATION StringToPIM_OP(std::string str) {
         return PIM_OPERATION::EXIT;
     else
         return PIM_OPERATION::NOP;
+}
+
+bool CheckAam(std::string str) {
+    if (str.find("AAM") != std::string::npos)
+        return true;
+    else
+        return false;
 }
 
 PIM_OPERAND StringToOperand(std::string str) {
