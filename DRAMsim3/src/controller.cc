@@ -42,7 +42,7 @@ Controller::Controller(int channel, const Config &config, const Timing &timing)
 #endif  // CMD_TRACE
 }
 
-std::pair<uint64_t, int> Controller::ReturnDoneTrans(uint64_t clk) {
+std::pair<uint64_t, std::pair<int, uint8_t*>> Controller::ReturnDoneTrans(uint64_t clk) {
     auto it = return_queue_.begin();
     while (it != return_queue_.end()) {
         if (clk >= it->complete_cycle) {
@@ -52,14 +52,14 @@ std::pair<uint64_t, int> Controller::ReturnDoneTrans(uint64_t clk) {
                 simple_stats_.Increment("num_reads_done");
                 simple_stats_.AddValue("read_latency", clk_ - it->added_cycle);
             }
-            auto pair = std::make_pair(it->addr, it->is_write);
+            auto pair = std::make_pair(it->addr, std::make_pair(it->is_write, it->DataPtr));
             it = return_queue_.erase(it);
             return pair;
         } else {
             ++it;
         }
     }
-    return std::make_pair(-1, -1);
+    return std::make_pair(-1, std::make_pair(-1, nullptr));
 }
 
 void Controller::ClockTick() {

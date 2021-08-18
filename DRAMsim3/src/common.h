@@ -106,19 +106,22 @@ struct Command {
 
 struct Transaction {
     Transaction() {}
-    Transaction(uint64_t addr, bool is_write)
+    Transaction(uint64_t addr, bool is_write, uint8_t* DataPtr)
         : addr(addr),
           added_cycle(0),
           complete_cycle(0),
+          DataPtr(DataPtr),
           is_write(is_write) {}
     Transaction(const Transaction& tran)
         : addr(tran.addr),
           added_cycle(tran.added_cycle),
           complete_cycle(tran.complete_cycle),
+          DataPtr(DataPtr),
           is_write(tran.is_write) {}
     uint64_t addr;
     uint64_t added_cycle;
     uint64_t complete_cycle;
+    uint8_t* DataPtr;
     bool is_write;
 
     friend std::ostream& operator<<(std::ostream& os, const Transaction& trans);

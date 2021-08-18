@@ -10,12 +10,12 @@ namespace dramsim3 {
 class MemorySystem {
    public:
     MemorySystem(const std::string &config_file, const std::string &output_dir,
-                 std::function<void(uint64_t)> read_callback,
+                 std::function<void(uint64_t, uint8_t* DataPtr)> read_callback,
                  std::function<void(uint64_t)> write_callback);
     ~MemorySystem();
     void ClockTick();
-    void RegisterCallbacks(std::function<void(uint64_t)> read_callback,
-                           std::function<void(uint64_t)> write_callback);
+    // void RegisterCallbacks(std::function<void(uint64_t)> read_callback,
+    //                        std::function<void(uint64_t)> write_callback);
     double GetTCK() const;
     int GetBusBits() const;
     int GetBurstLength() const;
@@ -24,11 +24,12 @@ class MemorySystem {
     void ResetStats();
 
     bool WillAcceptTransaction(uint64_t hex_addr, bool is_write) const;
-    bool AddTransaction(uint64_t hex_addr, bool is_write);
+    bool AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr);
+    void init(uint8_t* pmemAddr, uint64_t size, unsigned int burstSize);
 };
 
 MemorySystem* GetMemorySystem(const std::string &config_file, const std::string &output_dir,
-                 std::function<void(uint64_t)> read_callback,
+                 std::function<void(uint64_t, uint8_t* DataPtr)> read_callback,
                  std::function<void(uint64_t)> write_callback);
 }  // namespace dramsim3
 

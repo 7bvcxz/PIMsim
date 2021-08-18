@@ -105,7 +105,7 @@ class HMCResponse {
 class HMCMemorySystem : public BaseDRAMSystem {
    public:
     HMCMemorySystem(Config& config, const std::string& output_dir,
-                    std::function<void(uint64_t)> read_callback,
+                    std::function<void(uint64_t, uint8_t*)> read_callback,
                     std::function<void(uint64_t)> write_callback);
     ~HMCMemorySystem();
     // assuming there are 2 clock domains one for logic die one for DRAM
@@ -115,7 +115,7 @@ class HMCMemorySystem : public BaseDRAMSystem {
 
     // had to have 3 insert interfaces cuz HMC is so different...
     bool WillAcceptTransaction(uint64_t hex_addr, bool is_write) const override;
-    bool AddTransaction(uint64_t hex_addr, bool is_write) override;
+    bool AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataPtr) override;
     bool InsertReqToLink(HMCRequest* req, int link);
     bool InsertHMCReq(HMCRequest* req);
 

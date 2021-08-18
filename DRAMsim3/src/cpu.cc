@@ -13,7 +13,7 @@ void RandomCPU::ClockTick() {
     }
     get_next_ = memory_system_.WillAcceptTransaction(last_addr_, last_write_);
     if (get_next_) {
-        memory_system_.AddTransaction(last_addr_, last_write_);
+        memory_system_.AddTransaction(last_addr_, last_write_, nullptr);
     }
     clk_++;
     return;
@@ -35,17 +35,17 @@ void StreamCPU::ClockTick() {
 
     if (!inserted_a_ &&
         memory_system_.WillAcceptTransaction(addr_a_ + offset_, false)) {
-        memory_system_.AddTransaction(addr_a_ + offset_, false);
+        memory_system_.AddTransaction(addr_a_ + offset_, false, nullptr);
         inserted_a_ = true;
     }
     if (!inserted_b_ &&
         memory_system_.WillAcceptTransaction(addr_b_ + offset_, false)) {
-        memory_system_.AddTransaction(addr_b_ + offset_, false);
+        memory_system_.AddTransaction(addr_b_ + offset_, false, nullptr);
         inserted_b_ = true;
     }
     if (!inserted_c_ &&
         memory_system_.WillAcceptTransaction(addr_c_ + offset_, true)) {
-        memory_system_.AddTransaction(addr_c_ + offset_, true);
+        memory_system_.AddTransaction(addr_c_ + offset_, true, nullptr);
         inserted_c_ = true;
     }
     // moving on to next element
@@ -81,7 +81,7 @@ void TraceBasedCPU::ClockTick() {
             get_next_ = memory_system_.WillAcceptTransaction(trans_.addr,
                                                              trans_.is_write);
             if (get_next_) {
-                memory_system_.AddTransaction(trans_.addr, trans_.is_write);
+                memory_system_.AddTransaction(trans_.addr, trans_.is_write, nullptr);
             }
         }
     }

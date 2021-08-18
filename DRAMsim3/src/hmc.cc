@@ -241,7 +241,7 @@ HMCResponse::HMCResponse(uint64_t id, HMCReqType req_type, int dest_link,
 }
 
 HMCMemorySystem::HMCMemorySystem(Config &config, const std::string &output_dir,
-                                 std::function<void(uint64_t)> read_callback,
+                                 std::function<void(uint64_t, uint8_t *DataPtr)> read_callback,
                                  std::function<void(uint64_t)> write_callback)
     : BaseDRAMSystem(config, output_dir, read_callback, write_callback),
       logic_clk_(0),
@@ -340,7 +340,7 @@ bool HMCMemorySystem::WillAcceptTransaction(uint64_t hex_addr,
     return insertable;
 }
 
-bool HMCMemorySystem::AddTransaction(uint64_t hex_addr, bool is_write) {
+bool HMCMemorySystem::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr) {
     // to be compatible with other protocol we have this interface
     // when using this intreface the size of each transaction will be block_size
     HMCReqType req_type;
@@ -498,7 +498,7 @@ void HMCMemorySystem::DrainResponses() {
             HMCResponse *resp = link_resp_queues_[i].front();
             if (resp->exit_time <= logic_clk_) {
                 if (resp->type == HMCRespType::RD_RS) {
-                    read_callback_(resp->resp_id);
+                    read_callback_(resp->resp_id, NULL);
                 } else {
                     write_callback_(resp->resp_id);
                 }
@@ -546,9 +546,9 @@ void HMCMemorySystem::DRAMClockTick() {
         // look ahead and return earlier
         while (true) {
             auto pair = ctrls_[i]->ReturnDoneTrans(clk_);
-            if (pair.second == 1) {  // write
+            if (pair.second.first == 1) {  // write
                 VaultCallback(pair.first);
-            } else if (pair.second == 0) {  // read
+            } else if (pair.second.first == 0) {  // read
                 VaultCallback(pair.first);
             } else {
                 break;
@@ -613,7 +613,7 @@ std::vector<int> HMCMemorySystem::BuildAgeQueue(std::vector<int> &age_counter) {
 }
 
 void HMCMemorySystem::InsertReqToDRAM(HMCRequest *req) {
-    Transaction trans(req->mem_operand, req->is_write);
+    Transaction trans(req->mem_operand, req->is_write, nullptr);
     ctrls_[req->vault]->AddTransaction(trans);
     return;
 }

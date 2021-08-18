@@ -3,7 +3,7 @@
 namespace dramsim3 {
 MemorySystem::MemorySystem(const std::string &config_file,
                            const std::string &output_dir,
-                           std::function<void(uint64_t)> read_callback,
+                           std::function<void(uint64_t, uint8_t*)> read_callback,
                            std::function<void(uint64_t)> write_callback)
     : config_(new Config(config_file, output_dir)) {
     // TODO: ideal memory type?
@@ -31,19 +31,19 @@ int MemorySystem::GetBurstLength() const { return config_->BL; }
 
 int MemorySystem::GetQueueSize() const { return config_->trans_queue_size; }
 
-void MemorySystem::RegisterCallbacks(
-    std::function<void(uint64_t)> read_callback,
-    std::function<void(uint64_t)> write_callback) {
-    dram_system_->RegisterCallbacks(read_callback, write_callback);
-}
+// void MemorySystem::RegisterCallbacks(
+//     std::function<void(uint64_t)> read_callback,
+//     std::function<void(uint64_t)> write_callback) {
+//     dram_system_->RegisterCallbacks(read_callback, write_callback);
+// }
 
 bool MemorySystem::WillAcceptTransaction(uint64_t hex_addr,
                                          bool is_write) const {
     return dram_system_->WillAcceptTransaction(hex_addr, is_write);
 }
 
-bool MemorySystem::AddTransaction(uint64_t hex_addr, bool is_write) {
-    return dram_system_->AddTransaction(hex_addr, is_write);
+bool MemorySystem::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr) {
+    return dram_system_->AddTransaction(hex_addr, is_write, DataPtr);
 }
 
 void MemorySystem::PrintStats() const { dram_system_->PrintStats(); }
@@ -51,9 +51,15 @@ void MemorySystem::PrintStats() const { dram_system_->PrintStats(); }
 void MemorySystem::ResetStats() { dram_system_->ResetStats(); }
 
 MemorySystem* GetMemorySystem(const std::string &config_file, const std::string &output_dir,
-                 std::function<void(uint64_t)> read_callback,
+                 std::function<void(uint64_t, uint8_t*)> read_callback,
                  std::function<void(uint64_t)> write_callback) {
     return new MemorySystem(config_file, output_dir, read_callback, write_callback);
+}
+
+void MemorySystem::init(uint8_t* pmemAddr, uint64_t size, unsigned int burstSize) {
+    dram_system_->pmemAddr = pmemAddr;
+    dram_system_->pmemAddr_size = size;
+    dram_system_->burstSize = burstSize;
 }
 }  // namespace dramsim3
 
