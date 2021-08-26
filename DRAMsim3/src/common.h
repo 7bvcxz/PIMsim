@@ -116,7 +116,7 @@ struct Transaction {
         : addr(tran.addr),
           added_cycle(tran.added_cycle),
           complete_cycle(tran.complete_cycle),
-          DataPtr(DataPtr),
+          DataPtr(tran.DataPtr),
           is_write(tran.is_write) {}
     uint64_t addr;
     uint64_t added_cycle;

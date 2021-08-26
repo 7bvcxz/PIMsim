@@ -61,6 +61,14 @@ void MemorySystem::init(uint8_t* pmemAddr, uint64_t size, unsigned int burstSize
     dram_system_->pmemAddr_size = size;
     dram_system_->burstSize = burstSize;
 }
+
+bool MemorySystem::IsPendingTransaction() {
+    return dram_system_->IsPendingTransaction();
+}
+
+void MemorySystem::SetWriteBufferThreshold(int threshold) {
+    dram_system_->SetWriteBufferThreshold(threshold);
+}
 }  // namespace dramsim3
 
 // This function can be used by autoconf AC_CHECK_LIB since

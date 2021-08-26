@@ -26,6 +26,7 @@ Controller::Controller(int channel, const Config &config, const Timing &timing)
                           ? RowBufPolicy::CLOSE_PAGE
                           : RowBufPolicy::OPEN_PAGE),
       last_trans_clk_(0),
+      write_buffer_threshold_(8),
       write_draining_(0) {
     if (is_unified_queue_) {
         unified_queue_.reserve(config_.trans_queue_size);
@@ -199,7 +200,7 @@ void Controller::ScheduleTransaction() {
     if (write_draining_ == 0 && !is_unified_queue_) {
         // we basically have a upper and lower threshold for write buffer
         if ((write_buffer_.size() >= write_buffer_.capacity()) ||
-            (write_buffer_.size() > 8 && cmd_queue_.QueueEmpty())) {
+            (write_buffer_.size() > write_buffer_threshold_ && cmd_queue_.QueueEmpty())) {
             write_draining_ = write_buffer_.size();
         }
     }
@@ -342,6 +343,13 @@ void Controller::UpdateCommandStats(const Command &cmd) {
         default:
             AbruptExit(__FILE__, __LINE__);
     }
+}
+
+bool Controller::IsPendingTransaction() {
+    if (pending_rd_q_.size() == 0 && pending_wr_q_.size() == 0)
+        return false;
+    else
+        return true;
 }
 
 }  // namespace dramsim3

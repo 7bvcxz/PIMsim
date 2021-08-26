@@ -108,6 +108,16 @@ add_executable(dramsim3test EXCLUDE_FROM_ALL
 target_link_libraries(dramsim3test Catch dramsim3)
 target_include_directories(dramsim3test PRIVATE src/)
 
+# PIM
+add_executable(pimdramsim3main src/main_pim.cc src/transaction_generator.cc)
+target_link_libraries(pimdramsim3main PRIVATE dramsim3 args)
+target_compile_options(pimdramsim3main PRIVATE)
+set_target_properties(pimdramsim3main PROPERTIES
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+)
+
 # We have to use this custome command because there's a bug in cmake
 # that if you do `make test` it doesn't build your updated test files
 # so we're stucking with `make dramsim3test` for now

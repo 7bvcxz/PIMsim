@@ -31,6 +31,10 @@ class MemorySystem {
     bool AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr);
     void init(uint8_t* pmemAddr, uint64_t size, unsigned int burstSize);
 
+    // For barrier
+    bool IsPendingTransaction();
+    void SetWriteBufferThreshold(int threshold);
+
    private:
     // These have to be pointers because Gem5 will try to push this object
     // into container which will invoke a copy constructor, using pointers
