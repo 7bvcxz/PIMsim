@@ -144,7 +144,24 @@ void PimUnit::PushCrf(int CRF_idx, uint8_t* DataPtr) {
 
 int PimUnit::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataPtr) {
     // DRAM READ & WRITE //
-	memcpy(bank_data_ , DataPtr, WORD_SIZE);
+    if (!is_write)
+	    memcpy(bank_data_ , pmemAddr_ + hex_addr, WORD_SIZE);
+
+	if(DebugMode())
+        PrintPIM_IST(CRF[PPC]);
+
+    // SET ADDR & EXECUTE //
+    SetOperandAddr(hex_addr);
+
+    Execute();
+
+	if (CRF[PPC].PIM_OP == PIM_OPERATION::MOV && 
+		CRF[PPC].dst == PIM_OPERAND::BANK) {        
+	    memcpy(pmemAddr_ + hex_addr, dst, WORD_SIZE);
+	}
+
+    PPC += 1;
+
 
     // NOP & JUMP //
     if (CRF[PPC].PIM_OP == PIM_OPERATION::NOP) {
@@ -178,26 +195,12 @@ int PimUnit::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataPtr) 
     }
 
     if (CRF[PPC].PIM_OP == PIM_OPERATION::EXIT){
-		std::cout << "EXIT\n";
+		if(DebugMode()) {
+			std::cout << "EXIT\n";
+		}
+        PPC = 0;
         return EXIT_END;
 	}
-
-	
-	if(DebugMode()) PrintPIM_IST(CRF[PPC]);
-
-
-    // SET ADDR & EXECUTE //
-    SetOperandAddr(hex_addr);
-
-    Execute();
-
-	if (CRF[PPC].PIM_OP == PIM_OPERATION::MOV && 
-		CRF[PPC].dst == PIM_OPERAND::BANK) {
-		memcpy(DataPtr, dst, WORD_SIZE);
-	}
-
-
-    PPC += 1;
 
     return PPC;
 }

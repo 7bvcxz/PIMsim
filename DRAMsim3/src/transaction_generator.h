@@ -8,6 +8,7 @@
 #include "memory_system.h"
 #include "configuration.h"
 #include "common.h"
+#include "pim_config.h"
 
 
 #define EVEN_BANK 0
@@ -19,7 +20,6 @@
 #define NUM_BANK             (NUM_BANK_PER_CHANNEL * NUM_CHANNEL)
 #define SIZE_WORD            32
 #define SIZE_ROW             (SIZE_WORD * NUM_WORD_PER_ROW)
-#define UNIT_SIZE            2  // FP16
 
 #define MAP_SBMR             0x3fff
 #define MAP_ABMR             0x3ffe
@@ -59,6 +59,7 @@ class TransactionGenerator {
     virtual void SetData() = 0;
     virtual void Execute() = 0;
     virtual void GetResult() = 0;
+    virtual void CheckResult() = 0;
 
     void ReadCallBack(uint64_t addr, uint8_t *DataPtr);
     void WriteCallBack(uint64_t addr);
@@ -93,6 +94,7 @@ class AddTransactionGenerator : public TransactionGenerator {
     void SetData() override;
     void Execute() override;
     void GetResult() override;
+    void CheckResult() override;
 
    private:
     uint8_t *x_, *y_, *z_;
@@ -119,6 +121,7 @@ class GemvTransactionGenerator : public TransactionGenerator {
     void SetData() override;
     void Execute() override;
     void GetResult() override;
+    void CheckResult() override;
 
    private:
     void ExecuteBank(int bank);

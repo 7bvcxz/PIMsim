@@ -55,40 +55,35 @@ int main(int argc, const char **argv) {
     std::string output_dir = args::get(output_dir_arg);
     std::string pim_api = args::get(pim_api_arg);
 
-	uint8_t *x;
-	uint8_t *y;
-	uint8_t *z;
-	uint8_t *w;
-
     TransactionGenerator * tx_generator;
     if (pim_api == "add") {
         uint64_t n = args::get(add_n_arg);
-		// >> mmm
-        x = (uint8_t *) malloc(sizeof(uint16_t) * n);
-        y = (uint8_t *) malloc(sizeof(uint16_t) * n);
-        z = (uint8_t *) malloc(sizeof(uint16_t) * n);
-        w = (uint8_t *) malloc(sizeof(uint16_t) * n);
-		for(int i=0; i<2*n; i++){
-			x[i] = (uint8_t)rand()%3;
-			y[i] = (uint8_t)rand()%3;
-			w[i] = x[i] + y[i];
-		}
-		x[0] = 4;
-		y[0] = 8;
-		w[0] = 12;
 
-		x[1] = 12;
-		y[1] = 24;
-		w[1] = 36;
-		// mmm << 
+        uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * n);
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * n);
+        uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * n);
+
+		for(int i=0; i<n; i++){
+			((uint16_t*)x)[i] = rand()%4;
+			((uint16_t*)y)[i] = rand()%4;
+		}
+
         tx_generator = new AddTransactionGenerator(config_file, output_dir, n, x, y, z);
     }
     else if (pim_api == "gemv") {
         uint64_t m = args::get(gemv_m_arg);
         uint64_t n = args::get(gemv_n_arg);
         uint8_t *A = (uint8_t *) malloc(sizeof(uint16_t) * m * n);
-        x = (uint8_t *) malloc(sizeof(uint16_t) * n);
-        y = (uint8_t *) malloc(sizeof(uint16_t) * m);
+        uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * n);
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * m);
+        
+		for(int i=0; i<n; i++){
+			((uint16_t*)x)[i] = rand()%4;
+            for (int j=0; j<m; j++) {
+                ((uint16_t*)A)[j*n+i] = rand()%4;
+            }
+		}
+
         tx_generator = new GemvTransactionGenerator(config_file, output_dir, m, n, A, x, y);
     }
 
@@ -100,19 +95,10 @@ int main(int argc, const char **argv) {
     std::cout << "Success Execute" << std::endl;
     tx_generator->GetResult();
     std::cout << "Success GetResult" << std::endl;
+    tx_generator->CheckResult();
 
     tx_generator->PrintStats();
 
-	// >> mmm
-	int err = 0;
-    int n = args::get(add_n_arg);
-	for(int i=0; i<n; i++){
-		err += ((uint16_t*)w)[i] - ((uint16_t*)z)[i]; 
-	}
-	std::cout << "ERROR : " << err << std::endl;
-
-	std::cout << (int)z[0] << " " << (int)z[1] << " " << (int)z[2] <<  std::endl;
-	// mmm <<
 
     delete tx_generator;
 

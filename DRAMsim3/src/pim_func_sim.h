@@ -27,7 +27,8 @@ class PimFuncSim {
 	  uint64_t pmemAddr_size;
 	  unsigned int burstSize;
 	  
-	  uint64_t UnAddressMapping(int channel, int rank, int bankgroup, int bank, int row, int column);
+	  uint64_t ReverseAddressMapping(Address& addr);
+	  uint64_t GetPimIndex(Address& addr);
 	  void PmemWrite(uint64_t hex_addr, uint8_t* DataPtr);
 	  void PmemRead(uint64_t hex_addr, uint8_t* DataPtr);
 	  void init(uint8_t* pmemAddr, uint64_t pmemAddr_size, unsigned int burstSize);

@@ -109,6 +109,10 @@ void AddTransactionGenerator::Execute() {
 	std::cout << "\n2>>>>>>>>>>>> AB -> PIM <<<<<<<<<<<\n";
     for (int ro = 0; ro * NUM_WORD_PER_ROW / 8 < ukernel_count_per_pim_; ro++) {
         for (int co_o = 0; co_o < NUM_WORD_PER_ROW / 8; co_o++) {
+            // Check that all data operations have been completed
+            if (ro * NUM_WORD_PER_ROW / 8 + co_o > ukernel_count_per_pim_)
+                break;
+
             // Mode transition: AB -> AB-PIM
             *data_temp_ |= 1;
             for (int ch = 0; ch < NUM_CHANNEL; ch++) {
@@ -186,10 +190,6 @@ void AddTransactionGenerator::Execute() {
 
             // Mode transition: AB-PIM -> AB
 			std::cout << "\n3>>>>>>>>>>>> PIM -> AB <<<<<<<<<<<\n";
-
-            // Check that all data operations have been completed
-            if (ro * NUM_WORD_PER_ROW / 8 + co_o >= ukernel_count_per_pim_)
-                break;
         }
     }
 }
@@ -211,6 +211,19 @@ void AddTransactionGenerator::GetResult() {
     Barrier();
 }
 
+void AddTransactionGenerator::CheckResult() {
+	int err = 0;
+    uint8_t *answer = (uint8_t *) malloc(sizeof(uint16_t) * n_);
+
+    for (int i=0; i<n_; i++) {
+        ((uint16_t*)answer)[i] = ((uint16_t*)x_)[i] + ((uint16_t*)y_)[i];
+    }
+
+	for(int i=0; i<n_; i++){
+		err += ((uint16_t*)answer)[i] - ((uint16_t*)z_)[i];
+	}
+	std::cout << "ERROR : " << err << std::endl;
+}
 
 void GemvTransactionGenerator::Initialize() {
     // TODO: currently only support m=4096
@@ -280,6 +293,23 @@ void GemvTransactionGenerator::GetResult() {
     for (int offset = 0; offset < strided_size ; offset += SIZE_WORD)
         TryAddTransaction(addr_y_ + offset, false, y_ + offset);
     Barrier();
+}
+
+void GemvTransactionGenerator::CheckResult() {
+    int err = 0;
+    uint8_t *answer = (uint8_t *) malloc(sizeof(uint16_t) * m_);
+
+    for (int m=0; m<m_; m++) {
+        ((uint16_t*)answer)[m] = 0;
+        for (int n=0; n<n_; n++) {
+            ((uint16_t*)answer)[m] += ((uint16_t*)A_)[m*n_+n] * ((uint16_t*)x_)[n];
+        }
+    }
+
+    for (int m=0; m<m_; m++) {
+        err += ((uint16_t*)answer)[m] - ((uint16_t*)y_)[m];
+    }
+    std::cout << "ERROR : " << err << std::endl;
 }
 
 void GemvTransactionGenerator::ExecuteBank(int bank) {

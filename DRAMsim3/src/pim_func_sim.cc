@@ -29,20 +29,28 @@ void PimFuncSim::init(uint8_t* pmemAddr_, uint64_t pmemAddr_size_, unsigned int 
 	}
 }
 
-uint64_t PimFuncSim::UnAddressMapping(int channel, int rank, int bankgroup, int bank, int row, int column){
-	return (channel << config_.ch_pos) +
-		   (rank << config_.ra_pos) + 
-		   (bankgroup << config_.bg_pos) + 
-		   (bank << config_.ba_pos) +
-	       (row << config_.ro_pos) + 
-		   (column << config_.co_pos);
+uint64_t PimFuncSim::ReverseAddressMapping(Address& addr) {
+    uint64_t hex_addr = 0;
+    hex_addr += (uint64_t)addr.channel << config_.ch_pos;
+    hex_addr += (uint64_t)addr.rank << config_.ra_pos;
+    hex_addr += (uint64_t)addr.bankgroup << config_.bg_pos;
+    hex_addr += (uint64_t)addr.bank << config_.ba_pos;
+    hex_addr += (uint64_t)addr.row << config_.ro_pos;
+    hex_addr += (uint64_t)addr.column << config_.co_pos;
+    return hex_addr << config_.shift_bits;
+}
+
+uint64_t PimFuncSim::GetPimIndex(Address& addr) {
+	return (addr.channel * config_.banks + addr.bankgroup * config_.banks_per_group + addr.bank) / 2;
 }
 
 bool PimFuncSim::DebugMode(uint64_t hex_addr) {
 	Address addr = config_.AddressMapping(hex_addr);
 
-	if(addr.channel == 0 && addr.bank == 0) return true;
-	return false;
+	if(addr.channel == 0 && addr.bank == 0)
+		return true;
+	else
+		return false;
 }
 
 bool PimFuncSim::ModeChanger(uint64_t hex_addr){
@@ -82,77 +90,76 @@ void PimFuncSim::PmemRead(uint64_t hex_addr, uint8_t* DataPtr) {
 	memcpy(DataPtr, host_addr, burstSize);
 }
 
+
 void PimFuncSim::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataPtr) {
 	//std::cout << "Trans -> PimFuncSim\n";
 	Address addr = config_.AddressMapping(hex_addr);
+
+	bool is_mode_change = ModeChanger(hex_addr);   // Just change bankmode register
+	if (is_mode_change)
+		return;
+
 	if(PIM_OP_MODE[addr.channel] == false) {
-		if(ModeChanger(hex_addr)) {   // Just change bankmode register
-		// Mode Change Completed~
-		}
-		else {	  // send to PimUnit and execute
-			if(bankmode[addr.channel] == "SB") {  // Single Bank Mode
-				if(DebugMode(hex_addr))
-					std::cout << "SB ";
-				if(addr.row == 0x3ffa) {  // set SRF_A, SRF_M
-					int pim_index = (addr.channel*config_.banks + addr.bank)/2; 
-					pim_unit_[pim_index]->SetSrf(hex_addr, DataPtr);
+		
+		// send to PimUnit and execute
+		if(bankmode[addr.channel] == "SB") {  // Single Bank Mode
+			if(DebugMode(hex_addr))
+				std::cout << "SB ";
+			if(addr.row == 0x3ffa) {  // set SRF_A, SRF_M
+				int pim_index = GetPimIndex(addr);
+				pim_unit_[pim_index]->SetSrf(hex_addr, DataPtr);
+			}
+			else if(addr.row == 0x3ffb) {  // set GRF_A, GRF_B
+				int pim_index = GetPimIndex(addr);
+				pim_unit_[pim_index]->SetGrf(hex_addr, DataPtr);
+			}
+			else if(addr.row == 0x3ffc) {  // set CRF
+				int pim_index = GetPimIndex(addr);
+				pim_unit_[pim_index]->SetCrf(hex_addr, DataPtr);
+			}
+			else {  // RD, WR
+				if(is_write) {
+					PmemWrite(hex_addr, DataPtr);
 				}
-				else if(addr.row == 0x3ffb) {  // set GRF_A, GRF_B
-					int pim_index = (addr.channel*config_.banks + addr.bank)/2; 
-					pim_unit_[pim_index]->SetGrf(hex_addr, DataPtr);
-				}
-				else if(addr.row == 0x3ffc) {  // set CRF
-					int pim_index = (addr.channel*config_.banks + addr.bank)/2; 
-					pim_unit_[pim_index]->SetCrf(hex_addr, DataPtr);
-				}
-				else {  // RD, WR
-					if(is_write) {
-						PmemWrite(hex_addr, DataPtr);
-					}
-					else {
-						PmemRead(hex_addr, DataPtr);
-					}
+				else {
+					PmemRead(hex_addr, DataPtr);
 				}
 			}
-			else {
-				if(!PIM_OP_MODE[addr.channel]) {  // All Bank Mode
+		}
+		else if (bankmode[addr.channel] == "AB") {
+			if(!PIM_OP_MODE[addr.channel]) {  // All Bank Mode
+				if(DebugMode(hex_addr))
+					std::cout << "AB ";
+				if(addr.row == 0x3ffa) {  // set SRF_A, SRF_M
+					for(int i=0; i<config_.banks/2; i++) {
+						int pim_index = GetPimIndex(addr) + i;
+						pim_unit_[pim_index]->SetSrf(hex_addr, DataPtr);
+					}
+				}
+				else if(addr.row == 0x3ffb) {  // set GRF_A, GRF_B
+					for(int i=0; i<config_.banks/2; i++) {
+						int pim_index = GetPimIndex(addr) + i;
+						pim_unit_[pim_index]->SetGrf(hex_addr, DataPtr);
+					}
+				}
+				else if(addr.row == 0x3ffc) {  // set CRF
 					if(DebugMode(hex_addr))
-						std::cout << "AB ";
-					if(addr.row == 0x3ffa) {  // set SRF_A, SRF_M
-						for(int i=0; i<config_.banks/2; i++) {
-							int pim_index = addr.channel*config_.banks/2 + i;
-							pim_unit_[pim_index]->SetSrf(hex_addr, DataPtr);
-						}
+						std::cout << "SetCrf\n";
+					for(int i=0; i<config_.banks/2; i++) {
+						int pim_index = GetPimIndex(addr) + i;
+						pim_unit_[pim_index]->SetCrf(hex_addr, DataPtr);
 					}
-					else if(addr.row == 0x3ffb) {  // set GRF_A, GRF_B
-						for(int i=0; i<config_.banks/2; i++) {
-							int pim_index = addr.channel*config_.banks/2 + i;
-							pim_unit_[pim_index]->SetGrf(hex_addr, DataPtr);
-						}
-					}
-					else if(addr.row == 0x3ffc) {  // set CRF
-						if(DebugMode(hex_addr))
-							std::cout << "SetCrf\n";
-						for(int i=0; i<config_.banks/2; i++) {
-							int pim_index = addr.channel*config_.banks/2 + i;
-							pim_unit_[pim_index]->SetCrf(hex_addr, DataPtr);
-						}
-					}
-					else {  // RD, WR
-						int evenodd = addr.bank % 2;    // check if it is evenbank or oddbank
-						uint64_t base_addr = hex_addr - (addr.bank << config_.ba_pos);		
-						if(is_write) {
-							for(int i=evenodd; i<config_.banks; i+=2) {
-								uint64_t tmp_addr = base_addr + (i >> config_.ba_pos);
-								PmemWrite(tmp_addr, DataPtr);
-							}
-					  	}
-						else {
-							for(int i=evenodd; i<config_.banks; i+=2) {
-								uint64_t tmp_addr = base_addr + (i >> config_.ba_pos);
-								PmemRead(tmp_addr, DataPtr);
-							}
-						}
+				}
+				else {  // RD, WR
+					int evenodd = addr.bank % 2;    // check if it is evenbank or oddbank
+					for(int i=evenodd; i<config_.banks; i+=2) {
+						Address tmp_addr = Address(addr.channel, addr.rank, i/4, i%4, addr.row, addr.column);
+						uint64_t tmp_hex_addr = ReverseAddressMapping(tmp_addr);
+
+						if (is_write)
+							PmemWrite(tmp_hex_addr, DataPtr);
+						else
+							PmemRead(tmp_hex_addr, DataPtr);
 					}
 				}
 			}
@@ -163,49 +170,37 @@ void PimFuncSim::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataP
 			std::cout << "DRAM CMD --> compute PIM \n";
 		if(addr.row == 0x3ffa) {  // set SRF_A, SRF_M
 			for(int i=0; i<config_.banks/2; i++) {
-				int pim_index = addr.channel*config_.banks/2 + i;
+				int pim_index = GetPimIndex(addr) + i;
 				pim_unit_[pim_index]->SetSrf(hex_addr, DataPtr);
 			}
 		}
 		else if(addr.row == 0x3ffb) {  // set GRF_A, GRF_B
 			for(int i=0; i<config_.banks/2; i++) {
-				int pim_index = addr.channel*config_.banks/2 + i;
+				int pim_index = GetPimIndex(addr) + i;
 				pim_unit_[pim_index]->SetGrf(hex_addr, DataPtr);
 			}
 		}
 		else if(addr.row == 0x3ffc) {  // set CRF
 			for(int i=0; i<config_.banks/2; i++) {
-				int pim_index = addr.channel*config_.banks/2 + i;
+				int pim_index = GetPimIndex(addr) + i;
 				pim_unit_[pim_index]->SetCrf(hex_addr, DataPtr);
 			}
 		}
 		else {  // RD, WR
 			int evenodd = addr.bank % 2;    // check if it is evenbank or oddbank
-			uint64_t base_addr = hex_addr - (addr.bank << config_.ba_pos);		
-			if(is_write) {
-				for(int i=evenodd; i<config_.banks; i+=2) {
-					uint64_t tmp_addr = base_addr + (i >> config_.ba_pos);
-					PmemWrite(tmp_addr, DataPtr);
-					int pim_index = (addr.channel*config_.banks + i)/2; 
-					
-					if(pim_unit_[pim_index]->AddTransaction(tmp_addr, is_write, DataPtr) == EXIT_END) {
-						
-						if(DebugMode(hex_addr))
-							std::cout << "CHANGEtoNONPIM\n";
-						PIM_OP_MODE[addr.channel] = false;
-					}
-				}
+			if (addr.channel == 0) {
+				std::cout << "H: " << addr.bankgroup << " " << addr.bank << " " << addr.row << " " << addr.column << std::endl;
 			}
-			else {
-				for(int i=evenodd; i<config_.banks; i+=2) {
-					uint64_t tmp_addr = base_addr + (i >> config_.ba_pos);
-					PmemRead(tmp_addr, DataPtr);
-					int pim_index = (addr.channel*config_.banks + i)/2; 
-					if(pim_unit_[pim_index]->AddTransaction(tmp_addr, is_write, DataPtr) == EXIT_END) {
-						if(DebugMode(hex_addr))
-							std::cout << "!CHANGEtoNONPIM! ";
-						PIM_OP_MODE[addr.channel] = false;
-					}
+			for(int i=evenodd; i<config_.banks; i+=2) {
+				Address tmp_addr = Address(addr.channel, addr.rank, i/4, i%4, addr.row, addr.column);
+				uint64_t tmp_hex_addr = ReverseAddressMapping(tmp_addr);
+
+				int pim_index = GetPimIndex(addr) + i/2;
+				int ret = pim_unit_[pim_index]->AddTransaction(tmp_hex_addr, is_write, DataPtr);
+				if(ret == EXIT_END) {
+					if(DebugMode(hex_addr))
+						std::cout << "CHANGEtoNONPIM\n";
+					PIM_OP_MODE[addr.channel] = false;	
 				}
 			}
 		}
