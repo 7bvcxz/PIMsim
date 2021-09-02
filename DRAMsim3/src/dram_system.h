@@ -9,6 +9,7 @@
 #include "configuration.h"
 #include "controller.h"
 #include "timing.h"
+#include "pim_func_sim.h"  // >> mmm << 
 
 #ifdef THERMAL
 #include "thermal.h"
@@ -45,7 +46,10 @@ class BaseDRAMSystem {
     uint8_t* pmemAddr;
     uint64_t pmemAddr_size;
     unsigned int burstSize;
+	PimFuncSim *pim_func_sim_;  // >> mmm << 
     void access(uint64_t hex_addr, bool is_write, uint8_t* data);
+	void init(uint8_t* pmemAddr, uint64_t pmemAddr_size, unsigned int burstSize);  // >> mmm <<
+	
 
    protected:
     uint64_t id_;

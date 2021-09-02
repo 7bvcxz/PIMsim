@@ -22,11 +22,22 @@ BaseDRAMSystem::BaseDRAMSystem(Config &config, const std::string &output_dir,
       clk_(0) {
     total_channels_ += config_.channels;
 
+	pim_func_sim_ = new PimFuncSim(config);  // >> mmm <<
+
 #ifdef ADDR_TRACE
     std::string addr_trace_name = config_.output_prefix + "addr.trace";
     address_trace_.open(addr_trace_name);
 #endif
 }
+
+// >> mmm
+void BaseDRAMSystem::init(uint8_t* pmemAddr_, uint64_t pmemAddr_size_, unsigned int burstSize_){
+	pmemAddr = pmemAddr_;
+	pmemAddr_size = pmemAddr_size_;
+	burstSize = burstSize_;
+	std::cout << "DramSys initialized!\n";
+	pim_func_sim_->init(pmemAddr_, pmemAddr_size_, burstSize_);
+} // mmm <<
 
 int BaseDRAMSystem::GetChannel(uint64_t hex_addr) const {
     hex_addr >>= config_.shift_bits;
@@ -85,6 +96,7 @@ void BaseDRAMSystem::ResetStats() {
     }
 }
 
+/*
 void BaseDRAMSystem::access(uint64_t hex_addr, bool is_write, uint8_t* data) {
     // check address range
     assert(hex_addr + burstSize <= pmemAddr_size);
@@ -99,6 +111,7 @@ void BaseDRAMSystem::access(uint64_t hex_addr, bool is_write, uint8_t* data) {
         delete data;
     }
 }
+*/
 
 // void BaseDRAMSystem::RegisterCallbacks(
 //     std::function<void(uint64_t)> read_callback,
@@ -167,6 +180,7 @@ bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *
     assert(ok);
     if (ok) {
         Transaction trans = Transaction(hex_addr, is_write, DataPtr);
+		pim_func_sim_->AddTransaction(hex_addr, is_write, DataPtr);	// >> mmm <<
         ctrls_[channel]->AddTransaction(trans);
     }
     last_req_clk_ = clk_;
@@ -179,10 +193,10 @@ void JedecDRAMSystem::ClockTick() {
         while (true) {
             auto pair = ctrls_[i]->ReturnDoneTrans(clk_);
             if (pair.second.first == 1) {
-                access(pair.first, 1, pair.second.second);
+                //access(pair.first, 1, pair.second.second);
                 write_callback_(pair.first);
             } else if (pair.second.first == 0) {
-                access(pair.first, 0, pair.second.second);
+                //access(pair.first, 0, pair.second.second);
                 read_callback_(pair.first, pair.second.second);
             } else {
                 break;

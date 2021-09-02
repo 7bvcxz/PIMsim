@@ -57,9 +57,10 @@ MemorySystem* GetMemorySystem(const std::string &config_file, const std::string 
 }
 
 void MemorySystem::init(uint8_t* pmemAddr, uint64_t size, unsigned int burstSize) {
-    dram_system_->pmemAddr = pmemAddr;
-    dram_system_->pmemAddr_size = size;
-    dram_system_->burstSize = burstSize;
+	dram_system_->init(pmemAddr, size, burstSize);
+    //dram_system_->pmemAddr = pmemAddr;
+    //dram_system_->pmemAddr_size = size;
+    //dram_system_->burstSize = burstSize;
 }
 
 bool MemorySystem::IsPendingTransaction() {

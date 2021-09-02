@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <sys/mman.h>
+#include <time.h>	// >> mmm <<
+#include <stdlib.h>  // >> mmm << 
 #include "memory_system.h"
 #include "configuration.h"
 #include "common.h"
@@ -57,6 +59,7 @@ class TransactionGenerator {
     virtual void SetData() = 0;
     virtual void Execute() = 0;
     virtual void GetResult() = 0;
+
     void ReadCallBack(uint64_t addr, uint8_t *DataPtr);
     void WriteCallBack(uint64_t addr);
     void PrintStats() { memory_system_.PrintStats(); }

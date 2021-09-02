@@ -70,6 +70,7 @@ void AddTransactionGenerator::Initialize() {
     ukernel_[10] = 0b01000000010000001000000000000000; // MOV(AAM)  BANK   GRF_A
     ukernel_[11] = 0b00010000000001000000100000000111; // JUMP      -1     7
     ukernel_[12] = 0b00100000000000000000000000000000; // EXIT
+	// 4 1 8 1 4 1 4 1 8 1 4 1 2
 }
 
 void AddTransactionGenerator::SetData() {
@@ -85,6 +86,7 @@ void AddTransactionGenerator::SetData() {
     Barrier();
 
     // Mode transition: SB -> AB
+	std::cout << "\n1>>>>>>>>>>>> SB -> AB <<<<<<<<<<<\n";
     for (int ch = 0; ch < NUM_CHANNEL; ch++) {
         Address addr(ch, 0, 0, 0, MAP_ABMR, 0);
         uint64_t hex_addr = ReverseAddressMapping(addr);
@@ -104,6 +106,7 @@ void AddTransactionGenerator::SetData() {
 }
 
 void AddTransactionGenerator::Execute() {
+	std::cout << "\n2>>>>>>>>>>>> AB -> PIM <<<<<<<<<<<\n";
     for (int ro = 0; ro * NUM_WORD_PER_ROW / 8 < ukernel_count_per_pim_; ro++) {
         for (int co_o = 0; co_o < NUM_WORD_PER_ROW / 8; co_o++) {
             // Mode transition: AB -> AB-PIM
@@ -182,6 +185,7 @@ void AddTransactionGenerator::Execute() {
             Barrier();
 
             // Mode transition: AB-PIM -> AB
+			std::cout << "\n3>>>>>>>>>>>> PIM -> AB <<<<<<<<<<<\n";
 
             // Check that all data operations have been completed
             if (ro * NUM_WORD_PER_ROW / 8 + co_o >= ukernel_count_per_pim_)
@@ -191,6 +195,7 @@ void AddTransactionGenerator::Execute() {
 }
 
 void AddTransactionGenerator::GetResult() {
+	std::cout << "\n4>>>>>>>>>>>> AB -> SB <<<<<<<<<<<\n";
     // Mode transition: AB -> SB
     for (int ch = 0; ch < NUM_CHANNEL; ch++) {
         Address addr(ch, 0, 0, 0, MAP_SBMR, 0);
@@ -354,7 +359,6 @@ void GemvTransactionGenerator::ExecuteBank(int bank) {
         TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
     }
     Barrier();
-
 }
 
 
