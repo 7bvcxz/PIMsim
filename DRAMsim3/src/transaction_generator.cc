@@ -11,12 +11,38 @@ void TransactionGenerator::WriteCallBack(uint64_t addr) {
 
 uint64_t TransactionGenerator::ReverseAddressMapping(Address& addr) {
     uint64_t hex_addr = 0;
-    hex_addr += (uint64_t)addr.channel << config_->ch_pos;
-    hex_addr += (uint64_t)addr.rank << config_->ra_pos;
-    hex_addr += (uint64_t)addr.bankgroup << config_->bg_pos;
-    hex_addr += (uint64_t)addr.bank << config_->ba_pos;
-    hex_addr += (uint64_t)addr.row << config_->ro_pos;
-    hex_addr += (uint64_t)addr.column << config_->co_pos;
+	hex_addr += ((uint64_t)addr.channel) << config_->ch_pos;
+	hex_addr += ((uint64_t)addr.rank) << config_->ra_pos;
+    hex_addr += ((uint64_t)addr.bankgroup) << config_->bg_pos;
+    hex_addr += ((uint64_t)addr.bank) << config_->ba_pos;
+    hex_addr += ((uint64_t)addr.row) << config_->ro_pos;
+    hex_addr += ((uint64_t)addr.column) << config_->co_pos;
+
+	/*
+	std::cout << "TEST BEFORE \tch" << addr.channel << "\tra" << addr.rank << "\tbg" << addr.bankgroup << 
+				  "\tba" << addr.bank << "\tro" << addr.row << "\tco" << addr.column << "\n";
+	uint64_t hex_addr1 = (uint64_t)0;
+	hex_addr1 += ((uint64_t)addr.channel) << config_->ch_pos;
+	//hex_addr1 += ((uint64_t)addr.rank) << config_->ra_pos;
+    //hex_addr1 += ((uint64_t)addr.bankgroup) << config_->bg_pos;
+	//hex_addr1 += ((uint64_t)addr.bank) << config_->ba_pos;
+    //hex_addr1 += ((uint64_t)addr.row) << config_->ro_pos;
+    //hex_addr1 += ((uint64_t)addr.column) << config_->co_pos;
+
+	Address addr1 = config_->AddressMapping(hex_addr1 << config_->shift_bits);
+	std::cout << "TEST AFTER \tch" << addr1.channel << "\tra" << addr1.rank << "\tbg" << addr1.bankgroup
+			  << "\tba" << addr1.bank << "\tro" << addr1.row << "\tco" << addr1.column << "\n";
+
+	
+	uint64_t hex_addr2 = 0;
+	hex_addr2 += addr.channel << config_->ch_pos;
+	int after_channel = (hex_addr2 >> config_->ch_pos) & config_->ch_mask;
+	std::cout << "BEFORE : " << addr.channel << "\tAFTER : " << after_channel << "\n";
+
+	std::cout << "ch_pos : " << config_->ch_pos << "\tch_mask : " << config_->ch_mask << "\n";
+	// ch_mask = 7    00000111
+	*/
+
     return hex_addr << config_->shift_bits;
 }
 
@@ -236,12 +262,18 @@ void GemvTransactionGenerator::Initialize() {
 
     // Define ukernel
     ukernel_gemv_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
+	for(int i=0; i<32; i++)
+		ukernel_gemv_[i] = 0b00000000000000000000000000000000; // initialize to NOP  >> mmm <<
+	  
     ukernel_gemv_[0] = 0b10100100001000001000000000000000; // MAC(AAM)  GRF_B  BANK  SRF_M
     ukernel_gemv_[1] = 0b00010000000001000000100000000111; // JUMP      -1     7
     ukernel_gemv_[2] = 0b00100000000000000000000000000000; // EXIT
 
     ukernel_reduce_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
-    ukernel_reduce_[0] = 0b10000100100100000000000000000001; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[1]
+	for(int i=0; i<32; i++)
+		ukernel_reduce_[i] = 0b00000000000000000000000000000000; // initialize to NOP  >> mmm << 
+
+	ukernel_reduce_[0] = 0b10000100100100000000000000000001; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[1]
     ukernel_reduce_[1] = 0b10000100100100000000000000000010; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[2]
     ukernel_reduce_[2] = 0b10000100100100000000000000000011; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[3]
     ukernel_reduce_[3] = 0b10000100100100000000000000000100; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[4]
@@ -258,14 +290,17 @@ void GemvTransactionGenerator::SetData() {
     A_T_ = (uint8_t *) malloc(sizeof(uint16_t) * m_ * n_);
     for (int m = 0; m < m_; m++) {
         for (int n = 0; n < n_; n++) {
-            ((uint16_t*)A_T_)[n * m_ + m] = ((uint16_t*)A_)[m * n_ + m];
+            ((uint16_t*)A_T_)[n * m_ + m] = ((uint16_t*)A_)[m * n_ + n];   // >> mmm << 
+            // ((uint16_t*)A_T_)[n * m_ + m] = ((uint16_t*)A_)[m * n_ + m];
         }
     }
+    // mmm OK
 
     // Write input data A
     for (int offset = 0; offset < strided_size; offset += SIZE_WORD)
         TryAddTransaction(addr_A_ + offset, true, A_T_ + offset);
     Barrier();
+    // mmm OK
 
     // Mode transition: SB -> AB
     for (int ch = 0; ch < NUM_CHANNEL; ch++) {
@@ -288,7 +323,9 @@ void GemvTransactionGenerator::GetResult() {
     }
     Barrier();
 
+    std::cout << "get data!!!!!!!\n";
     uint64_t strided_size = Ceiling(m_ * UNIT_SIZE, SIZE_WORD * NUM_BANK);
+    std::cout << "strided_size = " << strided_size << std::endl;
     // Read output data z
     for (int offset = 0; offset < strided_size ; offset += SIZE_WORD)
         TryAddTransaction(addr_y_ + offset, false, y_ + offset);
@@ -310,6 +347,21 @@ void GemvTransactionGenerator::CheckResult() {
         err += ((uint16_t*)answer)[m] - ((uint16_t*)y_)[m];
     }
     std::cout << "ERROR : " << err << std::endl;
+    
+    std::cout << "A:\n";
+    for (int i=0; i<4096; i++) {
+        std::cout << (int)((uint16_t*)y_)[i] << " ";
+    }
+    std::cout << "\nans:\n";
+    for (int i=0; i<4096; i++) {
+        std::cout << (int)((uint16_t*)answer)[i] << " ";
+    }
+    std::cout << "\n";
+
+    for (int i=0; i<4096; i++) {
+        if(((uint16_t*)answer)[i] != ((uint16_t*)y_)[i])
+            std::cout << "wrong offset : " << i << std::endl;
+    }
 }
 
 void GemvTransactionGenerator::ExecuteBank(int bank) {
@@ -323,14 +375,28 @@ void GemvTransactionGenerator::ExecuteBank(int bank) {
     }
     Barrier();
 
-    // Execute for EVEN_BANK
+    // Execute for EVEN_BANK or ODD_BANK
     for (int ro = 0; ro * NUM_WORD_PER_ROW / 8 < ukernel_count_per_pim_; ro++) {
-        for (int co_o = 0; co_o < NUM_WORD_PER_ROW / 8; co_o++) {     
+        for (int co_o = 0; co_o < NUM_WORD_PER_ROW / 8; co_o++) {     // TODO <<<< mmm suitable to x_ length
             // Write input data x to SRF_M
-            std::memcpy(data_temp_ + 16, ((uint16_t*)x_) + (ro * NUM_WORD_PER_ROW + co_o * 8), 16);
+            // >> mmm
+            std::cout << "x : ";
+            for(int i=0; i<n_; i++) std::cout << (int)(((uint16_t*)x_)[i]) << " ";
+            std::cout << std::endl;
+            // mmm <<
+            std::memcpy(data_temp_ + 16, ((uint16_t*)x_) + (ro * NUM_WORD_PER_ROW + co_o * 8), 16);  // mmm OK!
+            
+            // >> mmm 
+            std::cout << "data_temp_ : ";
+            for(int i=0; i<16; i++) std::cout << (int)(((uint16_t*)data_temp_)[i]) << " ";
+            std::cout << std::endl;
+            // mmm << 
+            
             for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+				std::cout << "\n<SET SRF of bank : " << bank << ">\n";  // >> mmm << 
                 Address addr(ch, 0, 0, bank, MAP_SRF, 0);
                 uint64_t hex_addr = ReverseAddressMapping(addr);
+				Address addr1 = config_->AddressMapping(hex_addr);
                 TryAddTransaction(hex_addr, true, data_temp_);
             }
             Barrier();
@@ -354,7 +420,7 @@ void GemvTransactionGenerator::ExecuteBank(int bank) {
                 }
             }
             Barrier();
-
+            std::cout << "><><><><><><><><><><><><><><><\n";
             // Mode transition: AB-PIM -> AB
 
             // Check that all data operations have been completed
@@ -381,15 +447,37 @@ void GemvTransactionGenerator::ExecuteBank(int bank) {
         TryAddTransaction(hex_addr, true, data_temp_);
     }
     Barrier();
-    
-    // Execute ukernel 7
+
+	std::cout << "<execute ukernel 0~7 !!!>\n";
+    // Execute ukernel 0~7
+    for (int uker = 0; uker < 8; uker++) {
+        std::cout << "executing ukernel " << uker << std::endl;
+        for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+            Address addr(ch, 0, 0, bank, 0, 0);
+            uint64_t hex_addr = ReverseAddressMapping(addr);
+            TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
+        }
+        Barrier();
+    }
+    // Mode transition: AB-PIM -> AB
+
+    // >> mmm
+    // reset GRF_B 
+    uint8_t* zero = (uint8_t*)malloc(WORD_SIZE);
+    std::cout << "haha\n";
+    for (int i=0; i< WORD_SIZE; i++) zero[i] = 0;
+    std::cout << "haha\n";
     for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-        Address addr(ch, 0, 0, bank, 0, 0);
-        uint64_t hex_addr = ReverseAddressMapping(addr);
-        TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
+        for (int co = 8; co < 16; co++) {
+            Address addr(ch, 0, 0, 0, MAP_GRF, co);
+            uint64_t hex_addr = ReverseAddressMapping(addr);
+            std::cout << "co : " << co << "\n";
+            TryAddTransaction(hex_addr, true, zero);
+            
+        }
     }
     Barrier();
+    // mmm << 
 }
-
 
 }  // namespace dramsim3

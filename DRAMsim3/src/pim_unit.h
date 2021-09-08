@@ -60,6 +60,7 @@ class PimUnit {
     int LC;
 
 	int pim_id;
+	int debug_cnt;
 
     unit_t *GRF_A_;
     unit_t *GRF_B_;

@@ -78,8 +78,10 @@ int main(int argc, const char **argv) {
         uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * m);
         
 		for(int i=0; i<n; i++){
+            //((uint16_t*)x)[i] = 1;
 			((uint16_t*)x)[i] = rand()%4;
             for (int j=0; j<m; j++) {
+                //((uint16_t*)A)[j*n+i] = 1;
                 ((uint16_t*)A)[j*n+i] = rand()%4;
             }
 		}

@@ -7,8 +7,8 @@ typedef uint16_t    unit_t;
 //////////////////////////////////////////////////////
 
 #pragma once
-#define NOP_END           77
-#define EXIT_END          765
+#define NOP_END           111
+#define EXIT_END          222
 
 // SIZE IS BYTE
 #define UNIT_SIZE         (sizeof(unit_t))
