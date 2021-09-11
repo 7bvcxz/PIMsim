@@ -1,11 +1,11 @@
-# 이 문서는 Transaction Generator, DRAMsim3, Pim Function Simulator 실험 환경을 만드는 방법과, PIMsim 실험 환경을 만드는 방법을 가이드 한다.
+# 이 문서는 Transaction Generator, DRAMsim3, Pim Function Simulator 실험 환경을 만드는 방법과, PIMsim 실험 환경을 만드는 방법을 가이드 합니다.
 
 ## Build PIM Simulator
 ```
-1. $ mkdir build
-2. $ cd build
-3. $ cmake ..
-4. $ make -j8
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j4
 ```
 
 ## Run
@@ -36,4 +36,9 @@ e.g.,
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=4096 --gemv-n=32
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=8192 --gemv-n=32
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=8192 --gemv-n=96
+```
+
+## Clean
+```
+$ make clean
 ```

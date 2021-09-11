@@ -7,8 +7,8 @@ typedef float    unit_t;
 //////////////////////////////////////////////////////
 
 #pragma once
-#define NOP_END           77
-#define EXIT_END          777
+#define NOP_END           111
+#define EXIT_END          222
 
 #define BGS_PER_PCH       4
 #define BKS_PER_BG        4
