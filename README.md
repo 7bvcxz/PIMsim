@@ -1,18 +1,13 @@
-# PIM Functional Simulator
-
-## Build
+# PIMsim
+## What is it?
 ```
-make
-```
-
-## Test
-```
-$ ./PimSimulator ADD
-$ ./PimSimulator ADD_AAM
-$ ./PimSimulator GEMV
+PIM Simulator
+- transaction generator + DRAMsim3 + PIM Functional Simulator
 ```
 
-## Clean
+# PIMFuncSim
+## What is it?
 ```
-make clean
+PIM Functional Simulator
+- for checking PIM operation
 ```
