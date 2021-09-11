@@ -8,9 +8,8 @@ $ cmake ..
 $ make -j4
 ```
 
-## Run
+## Run ADD 
 ```
-1. Compute ADD
 ./pimdramsim3main
     - ../configs/( memory setting )
         - only support 'HBM2_4Gb_test.ini' yet
@@ -21,8 +20,9 @@ $ make -j4
 e.g., 
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=add --add-n=4096
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=add --add-n=8192
-
-2. Compute GEMV
+```
+## Run GEMV
+```
 ./pimdramsim3main
     - ../configs/( memory setting )
         - only support 'HBM2_4Gb_test.ini' yet
@@ -36,6 +36,12 @@ e.g.,
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=4096 --gemv-n=32
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=8192 --gemv-n=32
 $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=8192 --gemv-n=96
+```
+
+## Debug Mode
+```
+Can set debug mode in pim_config.h
+Upgrade in progress,,,
 ```
 
 ## Clean
