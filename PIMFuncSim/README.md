@@ -4,7 +4,7 @@
 ```
 └── testers            # Offer a set of CRF.txt, PimCmd.txt to test computations easily (ADD, GEMV)
 └── config             # Configurations. Can set unit size & debug mode
-└── utils              # Several codes to run PimUnit
+└── utils              # Several codes to support PimUnit
 └── PimSimulator       # Define physical memory, program each PimUnit, and send transactions to a proper PimUnit
 └── PimUnit            # A PimUnit that is attached to 2 banks. Has registers, and compute PIM with transactions from PimSimulator
 └── Makefile           # 
@@ -14,10 +14,10 @@
 
 ## 2. How it works
 ```
-1. Initialize PimUnits
-2. Allocate physical memory + write data to test in physical memory
-3. Program μKernal in CRF.txt to PimUnits
-4. Send transactions in PimCmd.txt to PimUnits one by one --> Compute PIM
+1. Initialize PimUnits (①)
+2. Allocate physical memory + write data to test in physical memory (①)
+3. Program μKernal in CRF.txt to PimUnits (②)
+4. Send transactions in PimCmd.txt to PimUnits one by one --> Compute PIM (③)
 5. Compute ERROR between answer(calculated normally) and result (calculated with PIM)
 ```
 
