@@ -14,8 +14,23 @@ PIMSim은 삼성의 PIM-DRAM[1]의 동작을 테스트할 수 있는 DRAMSim3 �
 - 현재 DRAM의 모드 변경 (SB ↔ AB ↔ AB-PIM)
   - SB(Single bank mode): 단일 bank에서 수행
   - AB()
-
+  
 ## Transaction Generator
+
+기존 DRAMsim3는 다음과 같은 방법으로 테스트를 수행한다.
+- Trace file을 통해 정해진 clock에 transaction 전달
+- Random transaction을 생성
+
+그러나, PIM Simulator의 경우 위의 두 가지 방법에 대해 다음과 같은 문제가 발생한다.
+- ??
+- ??
+- 기존 테스트 환경은 Physical memory에 저장된 데이터를 고려하지 않는다.
+
+따라서, transaction generator를 통해 테스트를 수행하며 다음과 같은 특징을 제공한다.
+- PIM을 활용하기 위하여 High-level API (E.g, ADD, GEMV) 제공
+- Physical Memory 제공
+- 등등등
+
 
 ## 1. Code Structure
 ```
