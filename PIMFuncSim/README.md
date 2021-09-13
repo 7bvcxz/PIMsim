@@ -14,10 +14,10 @@
 
 ## 2. How it works
 ```
-1. Initialize PimUnits (①)
-2. Allocate physical memory + write data to test in physical memory (①)
-3. Program μKernal in CRF.txt to PimUnits (②)
-4. Send transactions in PimCmd.txt to PimUnits one by one --> Compute PIM (③)
+1. Initialize PimUnits (1 in figure)
+2. Allocate physical memory + write data to test in physical memory (1 in figure)
+3. Program μKernal in CRF.txt to PimUnits (2 in figure)
+4. Send transactions in PimCmd.txt to PimUnits one by one --> Compute PIM (3 in figure)
 5. Compute ERROR between answer(calculated normally) and result (calculated with PIM)
 ```
 ![PimFuncSim](https://user-images.githubusercontent.com/80901560/133025524-9f7ba205-bcc0-45cc-b0b4-0c1eef0ca645.png)
