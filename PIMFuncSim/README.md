@@ -20,6 +20,7 @@
 4. Send transactions in PimCmd.txt to PimUnits one by one --> Compute PIM (③)
 5. Compute ERROR between answer(calculated normally) and result (calculated with PIM)
 ```
+![PimFuncSim](https://user-images.githubusercontent.com/80901560/133019673-ebc2feb2-25b5-4704-a036-cee60ec7231a.png)
 
 ## 3. Build
 ```
