@@ -6,10 +6,8 @@
 - 요약
   - PIM Functional Simulator를 기존 DRAMsim3와 연결하여, Memory에 대한 Transaction을
     기반으로 동작하는 Simulator이다.
-  - Transaction generator가 PIM 연산을 수행하기 위한 Transaction을 생성하여 (DRAMsim3
-	+ PIM Functional Simulator)에 전달하여 수행한다.
-  - 결국, Memory Transaction을 이용하여 PIM 연산을 수행할 수 있으며, Memory Timing 
-    정보를 이용한 각 Memory Transaction의 수행 cycle수, 완료 cycle을 얻어낼 수 있다.
+  - Transaction generator가 PIM 연산을 수행하기 위한 Transaction을 생성하여 (DRAMsim3	+ PIM Functional Simulator)에 전달하여 수행한다.
+  - 결국, Memory Transaction을 이용하여 PIM 연산을 수행할 수 있으며, Memory Timing 정보를 이용한 각 Memory Transaction의 complete/execution cycle을 얻어낼 수 있다.
 
   - Transaction generator 
     - PIM Functional Simulator의 동작을 확인하기 위하여, PIM 연산을 수행하기 위한 Memory
@@ -20,7 +18,7 @@
     수행 cycle수, 완료 cycle을 얻어낸다.
     - https://github.com/umd-memsys/DRAMsim3 의 코드를 사용하였다.
   - PIM Functional Simulator
-    - Memory Transaction을 통해 PIM 연산을 수행한다.
+    - PIM 동작을 조정하며, Physical memory에 대한 Read/Write를 수행한다.
 <br><br>
 
 # PIMFuncSim
