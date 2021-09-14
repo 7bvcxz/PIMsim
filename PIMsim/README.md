@@ -8,11 +8,6 @@
 ![image](https://user-images.githubusercontent.com/80901560/133189563-e7a486c5-8c6c-4a39-9dd9-756579e454e7.png)
 <br><br>
 
-## DRAMSim3
-Memory timing을 고려한 transaction의 complete/execution cycle을 제공한다
-- DRAMsim3[3]의 코드를 사용하며, bank_mode에 따른 상태 업데이트를 추가하였다. (TODO 0914 완료예정)
-<br><br>
-
 ## Transaction Generator
 기존 DRAMsim3는 다음과 같은 방법으로 테스트를 수행한다
 - Trace file을 통해 정해진 clock에 transaction 전달
@@ -28,8 +23,14 @@ Memory timing을 고려한 transaction의 complete/execution cycle을 제공한�
 따라서, transaction generator를 통해 테스트를 수행하며 다음과 같은 특징을 제공한다
 - PIM을 활용하기 위하여 High-level API (E.g, ADD, GEMV) 제공
   - High-level API 에 대한 transaction을 자동적으로 생성
-- Physical Memory 제공
-- 실제 연산결과와의 오차값 제공
+- Physical memory 제공
+  - Physical memory에 Read/Write를 수행하기 위해 transaction에 추가적으로 data pointer를 제공
+- 실제 연산결과와의 오차값 계산 제공
+<br><br>
+
+## DRAMsim3
+Memory timing을 고려하여 transaction의 complete/execution cycle을 제공한다
+- DRAMsim3[3]의 코드를 사용하며, bank_mode에 따른 상태 업데이트를 추가하였다. (TODO 0914 완료예정)
 <br><br>
 
 ## PIM Functional Simulator
