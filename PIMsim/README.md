@@ -1,36 +1,63 @@
-# PIMSim
-PIMSim은 삼성의 PIM-DRAM[1]의 동작을 테스트할 수 있는 DRAMSim3 기반의 시뮬레이션 환경을 제공한다. PIMSim은 PIM 동작 수행 및 테스트를 하기 위해 아래 두 개의 추가적인 모듈을 제공한다.
+# PIMsim
+### PIMsim은 삼성의 PIM-DRAM[1]의 동작을 테스트할 수 있는 DRAMsim3 기반의 시뮬레이션 환경을 제공한다. PIMsim은 PIM 동작 수행 및 테스트를 하기 위해 아래 두 개의 추가적인 모듈을 제공한다
  - **Transaction Generator**: PIM에서 특정 연산(e.g., ADD, GEMV)을 수행하기 위해 host-side transaction을 생성
- - **PIM Function Simulator**: Host에서 넘어오는 transaction에 따라 PIM 동작을 시뮬레이션 한다.
+ - **PIM Function Simulator**: Host에서 넘어오는 transaction에 따라 PIM 동작을 시뮬레이션 한다
+<br><br>
 
 ## Overall Architecture
+![image](https://user-images.githubusercontent.com/80901560/133189563-e7a486c5-8c6c-4a39-9dd9-756579e454e7.png)
+<br><br>
 
-## Modified DRAMSim3
-- DRAMSim 자체에서 physical memory 관리
-  - Transaction에 data pointer 포함
-  - Read, Write 시 DRAMSim 내부에서 physcial memory에 read/write 수행
+## DRAMSim3
+Memory timing을 고려한 transaction의 complete/execution cycle을 제공한다
+- DRAMsim3[3]의 코드를 사용하며, bank_mode에 따른 상태 업데이트를 추가하였다. (TODO 0914 완료예정)
+<br><br>
 
-## PIM Function Simulator
-- 현재 DRAM의 모드 변경 (SB ↔ AB ↔ AB-PIM)
-  - SB(Single bank mode): 단일 bank에서 수행
-  - AB()
-  
 ## Transaction Generator
-
-기존 DRAMsim3는 다음과 같은 방법으로 테스트를 수행한다.
+기존 DRAMsim3는 다음과 같은 방법으로 테스트를 수행한다
 - Trace file을 통해 정해진 clock에 transaction 전달
 - Random transaction을 생성
+<br><br>
 
-그러나, PIM Simulator의 경우 위의 두 가지 방법에 대해 다음과 같은 문제가 발생한다.
-- ??
-- ??
-- 기존 테스트 환경은 Physical memory에 저장된 데이터를 고려하지 않는다.
+그러나, PIM Simulator의 경우 위의 두 가지 방법에 대해 다음과 같은 문제가 발생한다
+- 임의의 크기를 가진 연산자에 대한 PIM 연산을 테스트 할 수 없다 (모든 크기에 대한 Trace file을 만들지 않는 이상)
+- PIM을 수행하기 위해선 특정 transaction을 알맞은 타이밍에 보내야 한다 
+- 기존 테스트 환경은 Physical memory에 저장된 데이터를 고려하지 않는다
+<br><br>
 
-따라서, transaction generator를 통해 테스트를 수행하며 다음과 같은 특징을 제공한다.
+따라서, transaction generator를 통해 테스트를 수행하며 다음과 같은 특징을 제공한다
 - PIM을 활용하기 위하여 High-level API (E.g, ADD, GEMV) 제공
+  - High-level API 에 대한 transaction을 자동적으로 생성
 - Physical Memory 제공
-- 등등등
+- 실제 연산결과와의 오차값 제공
+<br><br>
 
+## PIM Functional Simulator
+PIM 연산을 수행하기 위하여 아래와 같은 기능들을 제공한다
+- Physical memory Read/Write
+- 현재 bank_mode 변경 (SB ↔ AB ↔ AB-PIM)
+- PIM Register 값 설정 (CRF, GRF, SRF)
+- PIM 연산 수행 및 저장
+<br><br>
+
+Physical memory Read/Write
+- Physical memory에 Data를 Read/Write 한다.
+<br><br>
+
+현재 bank_mode 변경 (SB ↔ AB ↔ AB-PIM)
+- SB(Single bank mode): 단일 bank에서 수행
+- AB(All bank mode): Channel의 모든 bank에서 수행
+- AB-PIM(All bank PIM mode): Channel의 모든 bank에서 수행 및 PIM 연산 수행
+<br><br>  
+
+PIM Register 값 설정
+- PIM 연산을 수행하기 위한 Register 값을 설정한다 (CRF, GRF, SRF)
+<br><br>
+
+PIM 연산 수행 및 저장
+- PIM 연산을 수행하며, 결과값을 Physical Memory에 저장할 수 있다
+<br><br>
+  
 
 ## 1. Code Structure
 ```
@@ -102,8 +129,6 @@ pim_unit은 전달받은 transaction을 통해 PIM을 수행하며, PIM을 하�
 4. gemv의 μKernel, data 저장 방식 정리
 5. mode 별 동작 설명
 6. register의 값 바꾸는 방법 설명(CRF, SRF, GRF별 row/column address) 
-
-
 
 Summary of PIM Simulator
 1. Run PIM Simulator with a type of computation(e.g., GEMV, ADD, ...) and test data size(filled with random value)
@@ -181,7 +206,7 @@ $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=8192 --
 ## 6. Debug Mode
 ```
 Can set debug mode in pim_config.h
-Upgrade in progress,,, (written at 0913) (maybe finished at 0913)
+Upgrade in progress,,, (written at 0913) (maybe finished at 0914)
 ```
 
 ## 7. Clean
@@ -192,3 +217,5 @@ $ make clean
 
 ## Reference
 [1] Lee, Sukhan, et al. "Hardware Architecture and Software Stack for PIM Based on Commercial DRAM Technology: Industrial Product." 2021 ACM/IEEE 48th Annual International Symposium on Computer Architecture (ISCA). IEEE, 2021.
+[2] S. Li, Z. Yang, D. Reddy, A. Srivastava and B. Jacob, "DRAMsim3: a Cycle-accurate, Thermal-Capable DRAM Simulator," in IEEE Computer Architecture Letters.
+[3] https://github.com/umd-memsys/DRAMsim3 DRAMsim3 opensource code
