@@ -182,5 +182,7 @@ $ make clean
 
 ## Reference
 [1] Lee, Sukhan, et al. "Hardware Architecture and Software Stack for PIM Based on Commercial DRAM Technology: Industrial Product." 2021 ACM/IEEE 48th Annual International Symposium on Computer Architecture (ISCA). IEEE, 2021.
+
 [2] S. Li, Z. Yang, D. Reddy, A. Srivastava and B. Jacob, "DRAMsim3: a Cycle-accurate, Thermal-Capable DRAM Simulator," in IEEE Computer Architecture Letters.
+
 [3] https://github.com/umd-memsys/DRAMsim3 DRAMsim3 opensource code
