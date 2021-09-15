@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
+#include <string>
 #include "channel_state.h"
 #include "command_queue.h"
 #include "common.h"
@@ -40,7 +41,6 @@ class Controller {
     // For barrier
     bool IsPendingTransaction();
     int write_buffer_threshold_;
-
     int channel_id_;
 
    private:

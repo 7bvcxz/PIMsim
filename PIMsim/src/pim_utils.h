@@ -7,8 +7,6 @@
 #include <string>
 #include "pim_config.h"
 
-#define ABS(x)   ((x) < 0 ? -(x) : (x))
-
 PIM_OPERATION BitToPIM_OP(uint8_t* DataPtr);
 PIM_OPERAND BitToDst(uint8_t* DataPtr);
 PIM_OPERAND BitToSrc0(uint8_t* DataPtr);

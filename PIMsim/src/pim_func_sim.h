@@ -15,11 +15,11 @@ namespace dramsim3 {
 class PimFuncSim {
 	public:
 	  PimFuncSim(Config &config);
-	  void AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataPtr); 
+	  void AddTransaction(Transaction *trans); 
 	  bool DebugMode(uint64_t hex_addr);
 	  bool ModeChanger(uint64_t hex_addr);
 	  
-	  std::vector<string> bankmode; 
+	  std::vector<string> bankmode;
 	  std::vector<bool> PIM_OP_MODE;
 	  std::vector<PimUnit*> pim_unit_; 
 

@@ -48,10 +48,10 @@ std::pair<uint64_t, std::pair<int, uint8_t*>> Controller::ReturnDoneTrans(uint64
     while (it != return_queue_.end()) {
         if (clk >= it->complete_cycle) {
             if (it->is_write) {
-                simple_stats_.Increment("num_writes_done");
+                simple_stats_.Increment("num_writes_done");    // hmm point  number of write requests done --> controller가 몇개의 write transaction을 완료했는지 --> no touch
             } else {
-                simple_stats_.Increment("num_reads_done");
-                simple_stats_.AddValue("read_latency", clk_ - it->added_cycle);
+                simple_stats_.Increment("num_reads_done");     // hmm point  number of read requests done --> controller가 몇개의 read transaction을 완료했는지 --> no touch
+                simple_stats_.AddValue("read_latency", clk_ - it->added_cycle);   // hmm point    read request latency (cycles) --> 이것도 그대로일꺼고 --> no touch
             }
             auto pair = std::make_pair(it->addr, std::make_pair(it->is_write, it->DataPtr));
             it = return_queue_.erase(it);
@@ -87,7 +87,7 @@ void Controller::ClockTick() {
             if (second_cmd.IsValid()) {
                 if (second_cmd.IsReadWrite() != cmd.IsReadWrite()) {
                     IssueCommand(second_cmd);
-                    simple_stats_.Increment("hbm_dual_cmds");
+                    simple_stats_.Increment("hbm_dual_cmds");       // number of cycles dual cmds issued   --> 기능을 꺼서 안하는거로 --> no touch
                 }
             }
         }
@@ -96,14 +96,14 @@ void Controller::ClockTick() {
     // power updates pt 1
     for (int i = 0; i < config_.ranks; i++) {
         if (channel_state_.IsRankSelfRefreshing(i)) {
-            simple_stats_.IncrementVec("sref_cycles", i);
+            simple_stats_.IncrementVec("sref_cycles", i);  // no touch  --> 사용안함
         } else {
             bool all_idle = channel_state_.IsAllBankIdleInRank(i);
             if (all_idle) {
-                simple_stats_.IncrementVec("all_bank_idle_cycles", i);
+                simple_stats_.IncrementVec("all_bank_idle_cycles", i);       // 모든 bank 놀고있는지 --> no touch
                 channel_state_.rank_idle_cycles[i] += 1;
             } else {
-                simple_stats_.IncrementVec("rank_active_cycles", i);
+                simple_stats_.IncrementVec("rank_active_cycles", i);         // no touch
                 // reset
                 channel_state_.rank_idle_cycles[i] = 0;
             }
@@ -145,7 +145,7 @@ void Controller::ClockTick() {
     ScheduleTransaction();
     clk_++;
     cmd_queue_.ClockTick();
-    simple_stats_.Increment("num_cycles");
+    simple_stats_.Increment("num_cycles");    // no touch
     return;
 }
 
@@ -161,7 +161,7 @@ bool Controller::WillAcceptTransaction(uint64_t hex_addr, bool is_write) const {
 
 bool Controller::AddTransaction(Transaction trans) {
     trans.added_cycle = clk_;
-    simple_stats_.AddValue("interarrival_latency", clk_ - last_trans_clk_);
+    simple_stats_.AddValue("interarrival_latency", clk_ - last_trans_clk_);    // no touch,  latency between requests (interarrival)
     last_trans_clk_ = clk_;
 
     if (trans.is_write) {
@@ -258,7 +258,7 @@ void Controller::IssueCommand(const Command &cmd) {
             exit(1);
         }
         auto wr_lat = clk_ - it->second.added_cycle + config_.write_delay;
-        simple_stats_.AddValue("write_latency", wr_lat);
+        simple_stats_.AddValue("write_latency", wr_lat);     // write cmd latency(cycles) ,,, no touch
         pending_wr_q_.erase(it);
     }
     // must update stats before states (for row hits)
@@ -281,23 +281,23 @@ Command Controller::TransToCommand(const Transaction &trans) {
 int Controller::QueueUsage() const { return cmd_queue_.QueueUsage(); }
 
 void Controller::PrintEpochStats() {
-    simple_stats_.Increment("epoch_num");
-    simple_stats_.PrintEpochStats();
+    simple_stats_.Increment("epoch_num");           // no touch
+    simple_stats_.PrintEpochStats();                // no touch
 #ifdef THERMAL
     for (int r = 0; r < config_.ranks; r++) {
-        double bg_energy = simple_stats_.RankBackgroundEnergy(r);
+        double bg_energy = simple_stats_.RankBackgroundEnergy(r);     // sum of act, pre, sref energy
         thermal_calc_.UpdateBackgroundEnergy(channel_id_, r, bg_energy);
     }
 #endif  // THERMAL
     return;
 }
 
-void Controller::PrintFinalStats() {
-    simple_stats_.PrintFinalStats();
+void Controller::PrintFinalStats() {                
+    simple_stats_.PrintFinalStats();                 // no touch
 
 #ifdef THERMAL
     for (int r = 0; r < config_.ranks; r++) {
-        double bg_energy = simple_stats_.RankBackgroundEnergy(r);
+        double bg_energy = simple_stats_.RankBackgroundEnergy(r);    // sum of act, pre, sref energy
         thermal_calc_.UpdateBackgroundEnergy(channel_id_, r, bg_energy);
     }
 #endif  // THERMAL
@@ -308,37 +308,37 @@ void Controller::UpdateCommandStats(const Command &cmd) {
     switch (cmd.cmd_type) {
         case CommandType::READ:
         case CommandType::READ_PRECHARGE:
-            simple_stats_.Increment("num_read_cmds");
+            simple_stats_.Increment("num_read_cmds");                   // number of read/readp commands
             if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
                                            cmd.Bank()) != 0) {
-                simple_stats_.Increment("num_read_row_hits");
+                simple_stats_.Increment("num_read_row_hits");           // number of read row buffer hits     no touch I think
             }
             break;
         case CommandType::WRITE:
         case CommandType::WRITE_PRECHARGE:
-            simple_stats_.Increment("num_write_cmds");
+            simple_stats_.Increment("num_write_cmds");                   // number of write/writep commands
             if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
                                            cmd.Bank()) != 0) {
-                simple_stats_.Increment("num_write_row_hits");
+                simple_stats_.Increment("num_write_row_hits");           // number of write row buffer hits     no touch I think
             }
             break;
         case CommandType::ACTIVATE:
-            simple_stats_.Increment("num_act_cmds");
+            simple_stats_.Increment("num_act_cmds");                     // number of act commands      
             break;
         case CommandType::PRECHARGE:
-            simple_stats_.Increment("num_pre_cmds");
+            simple_stats_.Increment("num_pre_cmds");                     // number of pre commands        
             break;
         case CommandType::REFRESH:
-            simple_stats_.Increment("num_ref_cmds");
+            simple_stats_.Increment("num_ref_cmds");                     // number of refresh commands        
             break;
         case CommandType::REFRESH_BANK:
-            simple_stats_.Increment("num_refb_cmds");
+            simple_stats_.Increment("num_refb_cmds");                    // number of refresh bank commands          
             break;
         case CommandType::SREF_ENTER:
-            simple_stats_.Increment("num_srefe_cmds");
+            simple_stats_.Increment("num_srefe_cmds");                   // number of self ref ~      no touch       
             break;
         case CommandType::SREF_EXIT:
-            simple_stats_.Increment("num_srefx_cmds");
+            simple_stats_.Increment("num_srefx_cmds");                   // number of self ref exit ~     no touch
             break;
         default:
             AbruptExit(__FILE__, __LINE__);

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <vector>
+#include <string>
 
 namespace dramsim3 {
 
@@ -117,12 +118,14 @@ struct Transaction {
           added_cycle(tran.added_cycle),
           complete_cycle(tran.complete_cycle),
           DataPtr(tran.DataPtr),
-          is_write(tran.is_write) {}
+          is_write(tran.is_write),
+          executed_bankmode(tran.executed_bankmode) {}
     uint64_t addr;
     uint64_t added_cycle;
     uint64_t complete_cycle;
     uint8_t* DataPtr;
     bool is_write;
+    std::string executed_bankmode;  // >> mmm <<
 
     friend std::ostream& operator<<(std::ostream& os, const Transaction& trans);
     friend std::istream& operator>>(std::istream& is, Transaction& trans);

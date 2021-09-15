@@ -180,7 +180,7 @@ bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *
     assert(ok);
     if (ok) {
         Transaction trans = Transaction(hex_addr, is_write, DataPtr);
-		pim_func_sim_->AddTransaction(hex_addr, is_write, DataPtr);	// >> mmm <<
+		pim_func_sim_->AddTransaction(&trans);   // >> mmm <<
         ctrls_[channel]->AddTransaction(trans);
     }
     last_req_clk_ = clk_;

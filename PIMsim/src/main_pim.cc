@@ -7,7 +7,7 @@ using namespace dramsim3;
 using half_float::half;
 
 int main(int argc, const char **argv) {
-	srand(time(NULL));  // >> mmm <<
+	srand(time(NULL));
     args::ArgumentParser parser(
         "PIM-DRAM Simulator.",
         "Examples: \n."
@@ -57,6 +57,9 @@ int main(int argc, const char **argv) {
     std::string output_dir = args::get(output_dir_arg);
     std::string pim_api = args::get(pim_api_arg);
 
+
+    std::cout << C_GREEN << "Initializing..." << C_NORMAL << std::endl;
+    
     TransactionGenerator * tx_generator;
     if (pim_api == "add") {
         uint64_t n = args::get(add_n_arg);
@@ -94,17 +97,22 @@ int main(int argc, const char **argv) {
     }
 
     tx_generator->Initialize();
-    std::cout << "Success Initialize" << std::endl;
+    std::cout << C_GREEN << "Success Initialize" << C_NORMAL << std::endl << std::endl;
+    
+    std::cout << C_GREEN << "Setting Data..." << C_NORMAL << std::endl;
     tx_generator->SetData();
-    std::cout << "Success SetData" << std::endl;
+    std::cout << C_GREEN << "Success SetData" << C_NORMAL << std::endl << std::endl;
+
+    std::cout << C_GREEN << "Executing..." << C_NORMAL << std::endl;
     tx_generator->Execute();
-    std::cout << "Success Execute" << std::endl;
+    std::cout << C_GREEN << "Success Execute" << C_NORMAL << std::endl << std::endl;
+
+    std::cout << C_GREEN << "Getting Result..." << C_NORMAL << std::endl;
     tx_generator->GetResult();
-    std::cout << "Success GetResult" << std::endl;
+    std::cout << C_GREEN << "Success GetResult" << C_NORMAL << std::endl << std::endl;
     tx_generator->CheckResult();
 
     tx_generator->PrintStats();
-
 
     delete tx_generator;
 
