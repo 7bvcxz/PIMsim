@@ -1,13 +1,15 @@
 #include <iostream>
 #include "./../ext/headers/args.hxx"
-#include "transaction_generator.h"
+#include "./transaction_generator.h"
 #include "half.hpp"
 
 using namespace dramsim3;
 using half_float::half;
 
+// main code to simulate PIM simulator
 int main(int argc, const char **argv) {
-	srand(time(NULL));
+    srand(time(NULL));
+    // parse simulation settings
     args::ArgumentParser parser(
         "PIM-DRAM Simulator.",
         "Examples: \n."
@@ -57,59 +59,79 @@ int main(int argc, const char **argv) {
     std::string output_dir = args::get(output_dir_arg);
     std::string pim_api = args::get(pim_api_arg);
 
-
-    std::cout << C_GREEN << "Initializing..." << C_NORMAL << std::endl;
-    
+    // Initialize modules of PIM-Simulator
+    //  Transaction Generator + DRAMsim3 + PIM Functional Simulator
+    std::cout << C_GREEN << "Initializing modules..." << C_NORMAL << std::endl;
     TransactionGenerator * tx_generator;
+
+    // Define operands and Transaction generator for simulating computation
     if (pim_api == "add") {
         uint64_t n = args::get(add_n_arg);
 
+        // Define input vector x, y
         uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * n);
         uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * n);
+        // Define output vector z
         uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * n);
 
-		for(int i=0; i<n; i++){
+        // Fill input operands with random value
+        for (int i=0; i< n; i++) {
             half h_x = half(rand() / static_cast<float>(RAND_MAX));
             half h_y = half(rand() / static_cast<float>(RAND_MAX));
-			((uint16_t*)x)[i] = *reinterpret_cast<uint16_t*>(&h_x);
-			((uint16_t*)y)[i] = *reinterpret_cast<uint16_t*>(&h_y);
-		}
+            ((uint16_t*)x)[i] = *reinterpret_cast<uint16_t*>(&h_x);
+            ((uint16_t*)y)[i] = *reinterpret_cast<uint16_t*>(&h_y);
+        }
 
-        tx_generator = new AddTransactionGenerator(config_file, output_dir, n, x, y, z);
-    }
-    else if (pim_api == "gemv") {
+        // Define Transaction generator for ADD computation
+        tx_generator = new AddTransactionGenerator(config_file, output_dir,
+                                                   n, x, y, z);
+    } else if (pim_api == "gemv") {
         uint64_t m = args::get(gemv_m_arg);
         uint64_t n = args::get(gemv_n_arg);
+
+        // Define input matrix A, vector x
         uint8_t *A = (uint8_t *) malloc(sizeof(uint16_t) * m * n);
         uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * n);
+        // Define output vector y
         uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * m);
-        
-		for(int i=0; i<n; i++){
+
+        // Fill input operands with random value
+        for (int i=0; i< n; i++) {
             half h_x = half(rand() / static_cast<float>(RAND_MAX));
-			((uint16_t*)x)[i] = *reinterpret_cast<uint16_t*>(&h_x);
-            for (int j=0; j<m; j++) {
+            ((uint16_t*)x)[i] = *reinterpret_cast<uint16_t*>(&h_x);
+            for (int j=0; j< m; j++) {
                 half h_A = half(rand() / static_cast<float>(RAND_MAX));
                 ((uint16_t*)A)[j*n+i] = *reinterpret_cast<uint16_t*>(&h_A);
             }
-		}
+        }
 
-        tx_generator = new GemvTransactionGenerator(config_file, output_dir, m, n, A, x, y);
+        // Define Transaction generator for GEMV computation
+        tx_generator = new GemvTransactionGenerator(config_file, output_dir,
+                                                    m, n, A, x, y);
     }
+    std::cout << C_GREEN << "Success Module Initialize" << C_NORMAL << "\n\n";
 
+    // Initialize variables and ukernel
+    std::cout << C_GREEN << "Initializing severals..." << C_NORMAL << std::endl;
     tx_generator->Initialize();
-    std::cout << C_GREEN << "Success Initialize" << C_NORMAL << std::endl << std::endl;
-    
-    std::cout << C_GREEN << "Setting Data..." << C_NORMAL << std::endl;
+    std::cout << C_GREEN << "Success Initialize" << C_NORMAL << "\n\n";
+
+    // Write operand data and μkernel to physical memory and PIM registers
+    std::cout << C_GREEN << "Setting Data..." << C_NORMAL << "\n";
     tx_generator->SetData();
-    std::cout << C_GREEN << "Success SetData" << C_NORMAL << std::endl << std::endl;
+    std::cout << C_GREEN << "Success SetData" << C_NORMAL << "\n\n";
 
-    std::cout << C_GREEN << "Executing..." << C_NORMAL << std::endl;
+    // Execute PIM computation
+    std::cout << C_GREEN << "Executing..." << C_NORMAL << "\n";
     tx_generator->Execute();
-    std::cout << C_GREEN << "Success Execute" << C_NORMAL << std::endl << std::endl;
+    std::cout << C_GREEN << "Success Execute" << C_NORMAL << "\n\n";
 
-    std::cout << C_GREEN << "Getting Result..." << C_NORMAL << std::endl;
+    // Read PIM computation result from physical memory
+    std::cout << C_GREEN << "Getting Result..." << C_NORMAL << "\n";
     tx_generator->GetResult();
-    std::cout << C_GREEN << "Success GetResult" << C_NORMAL << std::endl << std::endl;
+    std::cout << C_GREEN << "Success GetResult" << C_NORMAL << "\n\n";
+
+    // Calculate error between the result of PIM computation and actual answer
     tx_generator->CheckResult();
 
     tx_generator->PrintStats();

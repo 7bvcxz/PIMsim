@@ -123,9 +123,15 @@ struct Transaction {
     uint64_t addr;
     uint64_t added_cycle;
     uint64_t complete_cycle;
-    uint8_t* DataPtr;
+    uint8_t* DataPtr;               // holds the data needed for physical memory
+                                    // RD/WR
+                                    // e.g., READ transaction : DataPtr holds
+                                    // read data from physical memory
+                                    // e.g., WRITE transaction : DataPtr holds
+                                    // the data to write on physical memory
     bool is_write;
-    std::string executed_bankmode;  // >> mmm <<
+    std::string executed_bankmode;  // expresses transaction's executed bank
+                                    // mode
 
     friend std::ostream& operator<<(std::ostream& os, const Transaction& trans);
     friend std::istream& operator>>(std::istream& is, Transaction& trans);

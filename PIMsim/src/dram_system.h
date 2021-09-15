@@ -1,25 +1,25 @@
 #ifndef __DRAM_SYSTEM_H
 #define __DRAM_SYSTEM_H
 
-#include <iostream>  // >> mmm <<
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 
-#include "common.h"
-#include "configuration.h"
-#include "controller.h"
-#include "timing.h"
-#include "pim_func_sim.h"  // >> mmm << 
+#include "./common.h"
+#include "./configuration.h"
+#include "./controller.h"
+#include "./timing.h"
+#include "./pim_func_sim.h"
 
 #ifdef THERMAL
-#include "thermal.h"
+#include "./thermal.h"
 #endif  // THERMAL
 
 namespace dramsim3 {
 
 class BaseDRAMSystem {
-   public:
+ public:
     BaseDRAMSystem(Config &config, const std::string &output_dir,
                    std::function<void(uint64_t, uint8_t*)> read_callback,
                    std::function<void(uint64_t)> write_callback);
@@ -32,7 +32,8 @@ class BaseDRAMSystem {
 
     virtual bool WillAcceptTransaction(uint64_t hex_addr,
                                        bool is_write) const = 0;
-    virtual bool AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr) = 0;
+    virtual bool AddTransaction(uint64_t hex_addr, bool is_write,
+                                uint8_t *DataPtr) = 0;
     virtual void ClockTick() = 0;
     int GetChannel(uint64_t hex_addr) const;
 
@@ -47,12 +48,12 @@ class BaseDRAMSystem {
     uint8_t* pmemAddr;
     uint64_t pmemAddr_size;
     unsigned int burstSize;
-	PimFuncSim *pim_func_sim_;  // >> mmm << 
-    void access(uint64_t hex_addr, bool is_write, uint8_t* data);
-	void init(uint8_t* pmemAddr, uint64_t pmemAddr_size, unsigned int burstSize);  // >> mmm <<
-	
+    PimFuncSim *pim_func_sim_;
+    void init(uint8_t* pmemAddr, uint64_t pmemAddr_size,
+              unsigned int burstSize);
 
-   protected:
+
+ protected:
     uint64_t id_;
     uint64_t last_req_clk_;
     Config &config_;
@@ -74,13 +75,14 @@ class BaseDRAMSystem {
 
 // hmmm not sure this is the best naming...
 class JedecDRAMSystem : public BaseDRAMSystem {
-   public:
+ public:
     JedecDRAMSystem(Config &config, const std::string &output_dir,
                     std::function<void(uint64_t, uint8_t*)> read_callback,
                     std::function<void(uint64_t)> write_callback);
     ~JedecDRAMSystem();
     bool WillAcceptTransaction(uint64_t hex_addr, bool is_write) const override;
-    bool AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr) override;
+    bool AddTransaction(uint64_t hex_addr, bool is_write,
+                        uint8_t *DataPtr) override;
     void ClockTick() override;
 };
 
@@ -97,10 +99,11 @@ class IdealDRAMSystem : public BaseDRAMSystem {
                                bool is_write) const override {
         return true;
     };
-    bool AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr) override;
+    bool AddTransaction(uint64_t hex_addr, bool is_write,
+                        uint8_t *DataPtr) override;
     void ClockTick() override;
 
-   private:
+ private:
     int latency_;
     std::vector<Transaction> infinite_buffer_q_;
 };

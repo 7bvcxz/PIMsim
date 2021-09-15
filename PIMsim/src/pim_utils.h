@@ -5,7 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
-#include "pim_config.h"
+#include "./pim_config.h"
 
 PIM_OPERATION BitToPIM_OP(uint8_t* DataPtr);
 PIM_OPERAND BitToDst(uint8_t* DataPtr);
@@ -20,4 +20,4 @@ int BitToImm1(uint8_t* DataPtr);
 bool CheckAam(uint8_t* DataPtr);
 bool CheckReLU(uint8_t* DataPtr);
 
-#endif  // UTILS_H_
+#endif  // __UTILS_H_

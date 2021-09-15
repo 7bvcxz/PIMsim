@@ -19,25 +19,25 @@ typedef uint16_t          unit_t;
 #define SRF_SIZE          (8 * UNIT_SIZE)
 
 enum class PIM_OPERATION {
-	NOP=0,
-	JUMP,
-	EXIT,
-	MOV=4,
-	FILL,
-	ADD=8,
-	MUL,
-	MAC,
-	MAD
+    NOP = 0,
+    JUMP,
+    EXIT,
+    MOV = 4,
+    FILL,
+    ADD = 8,
+    MUL,
+    MAC,
+    MAD
 };
 
 enum class PIM_OP_TYPE {
-    CONTROL=0,
+    CONTROL = 0,
     DATA,
     ALU
 };
 
 enum class PIM_OPERAND {
-    BANK=0,
+    BANK = 0,
     GRF_A,
     GRF_B,
     SRF_A,
@@ -45,4 +45,4 @@ enum class PIM_OPERAND {
     NONE
 };
 
-#endif  // CONFIG_H_
+#endif  // __CONFIG_H_

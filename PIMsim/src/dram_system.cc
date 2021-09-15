@@ -22,7 +22,7 @@ BaseDRAMSystem::BaseDRAMSystem(Config &config, const std::string &output_dir,
       clk_(0) {
     total_channels_ += config_.channels;
 
-	pim_func_sim_ = new PimFuncSim(config);  // >> mmm <<
+    pim_func_sim_ = new PimFuncSim(config);
 
 #ifdef ADDR_TRACE
     std::string addr_trace_name = config_.output_prefix + "addr.trace";
@@ -30,14 +30,14 @@ BaseDRAMSystem::BaseDRAMSystem(Config &config, const std::string &output_dir,
 #endif
 }
 
-// >> mmm
-void BaseDRAMSystem::init(uint8_t* pmemAddr_, uint64_t pmemAddr_size_, unsigned int burstSize_){
-	pmemAddr = pmemAddr_;
-	pmemAddr_size = pmemAddr_size_;
-	burstSize = burstSize_;
-	std::cout << "DramSys initialized!\n";
-	pim_func_sim_->init(pmemAddr_, pmemAddr_size_, burstSize_);
-} // mmm <<
+void BaseDRAMSystem::init(uint8_t* pmemAddr_, uint64_t pmemAddr_size_,
+                          unsigned int burstSize_) {
+    pmemAddr = pmemAddr_;
+    pmemAddr_size = pmemAddr_size_;
+    burstSize = burstSize_;
+    std::cout << "DramSys initialized!\n";
+    pim_func_sim_->init(pmemAddr_, pmemAddr_size_, burstSize_);
+}
 
 int BaseDRAMSystem::GetChannel(uint64_t hex_addr) const {
     hex_addr >>= config_.shift_bits;
@@ -96,31 +96,6 @@ void BaseDRAMSystem::ResetStats() {
     }
 }
 
-/*
-void BaseDRAMSystem::access(uint64_t hex_addr, bool is_write, uint8_t* data) {
-    // check address range
-    assert(hex_addr + burstSize <= pmemAddr_size);
-
-    uint8_t *host_addr = pmemAddr + hex_addr;
-
-    if (!is_write) {  // Read
-        std::memcpy(data, host_addr, burstSize);
-    } else {  // Write
-        std::memcpy(host_addr, data, burstSize);
-        // deallocate memory
-        delete data;
-    }
-}
-*/
-
-// void BaseDRAMSystem::RegisterCallbacks(
-//     std::function<void(uint64_t)> read_callback,
-//     std::function<void(uint64_t)> write_callback) {
-//     // TODO this should be propagated to controllers
-//     read_callback_ = read_callback;
-//     write_callback_ = write_callback;
-// }
-
 bool BaseDRAMSystem::IsPendingTransaction() {
     for (size_t i = 0; i < ctrls_.size(); i++) {
         if (ctrls_[i]->IsPendingTransaction())
@@ -167,7 +142,8 @@ bool JedecDRAMSystem::WillAcceptTransaction(uint64_t hex_addr,
     return ctrls_[channel]->WillAcceptTransaction(hex_addr, is_write);
 }
 
-bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr) {
+bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write,
+                                     uint8_t *DataPtr) {
 // Record trace - Record address trace for debugging or other purposes
 #ifdef ADDR_TRACE
     address_trace_ << std::hex << hex_addr << std::dec << " "
@@ -180,7 +156,14 @@ bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *
     assert(ok);
     if (ok) {
         Transaction trans = Transaction(hex_addr, is_write, DataPtr);
-		pim_func_sim_->AddTransaction(&trans);   // >> mmm <<
+        // Send transaction to PIM Functional Simulator
+        //  Performs physical memory RD/WR, bank mode change, set PIM register,
+        //  execute PIM computation and write result to physical memory
+        pim_func_sim_->AddTransaction(&trans);
+
+        // Send transaction to proper channel's controller
+        //  returns transaction's complete/execution cycle considering memory
+        //  timing information
         ctrls_[channel]->AddTransaction(trans);
     }
     last_req_clk_ = clk_;
@@ -193,10 +176,8 @@ void JedecDRAMSystem::ClockTick() {
         while (true) {
             auto pair = ctrls_[i]->ReturnDoneTrans(clk_);
             if (pair.second.first == 1) {
-                //access(pair.first, 1, pair.second.second);
                 write_callback_(pair.first);
             } else if (pair.second.first == 0) {
-                //access(pair.first, 0, pair.second.second);
                 read_callback_(pair.first, pair.second.second);
             } else {
                 break;
@@ -222,7 +203,8 @@ IdealDRAMSystem::IdealDRAMSystem(Config &config, const std::string &output_dir,
 
 IdealDRAMSystem::~IdealDRAMSystem() {}
 
-bool IdealDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr) {
+bool IdealDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write,
+                                     uint8_t *DataPtr) {
     auto trans = Transaction(hex_addr, is_write, DataPtr);
     trans.added_cycle = clk_;
     infinite_buffer_q_.push_back(trans);

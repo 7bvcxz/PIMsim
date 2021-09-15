@@ -1,15 +1,16 @@
 #ifndef __TRANSACTION_GENERATOR_H
 #define __TRANSACTION_GENERATOR_H
 
-#include <cstdint>
 #include <sys/mman.h>
-#include <time.h>	// >> mmm <<
-#include <stdlib.h>  // >> mmm << 
-#include "memory_system.h"
-#include "configuration.h"
-#include "common.h"
-#include "pim_config.h"
-#include "half.hpp"
+#include <time.h>
+#include <stdlib.h>
+#include <string>
+#include <cstdint>
+#include "./memory_system.h"
+#include "./configuration.h"
+#include "./common.h"
+#include "./pim_config.h"
+#include "./half.hpp"
 
 #define EVEN_BANK 0
 #define ODD_BANK  1
@@ -37,12 +38,15 @@
 namespace dramsim3 {
 
 class TransactionGenerator {
-   public:
-    TransactionGenerator(const std::string& config_file, const::string& output_dir)
+ public:
+    TransactionGenerator(const std::string& config_file,
+                         const::string& output_dir)
         : memory_system_(
               config_file, output_dir,
-              std::bind(&TransactionGenerator::ReadCallBack, this, std::placeholders::_1, std::placeholders::_2),
-              std::bind(&TransactionGenerator::WriteCallBack, this, std::placeholders::_1)),
+              std::bind(&TransactionGenerator::ReadCallBack, this,
+                        std::placeholders::_1, std::placeholders::_2),
+              std::bind(&TransactionGenerator::WriteCallBack, this,
+                        std::placeholders::_1)),
           config_(new Config(config_file, output_dir)),
           clk_(0) {
         pmemAddr_size_ = (uint64_t)4 * 1024 * 1024 * 1024;
@@ -74,7 +78,7 @@ class TransactionGenerator {
     void TryAddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr);
     void Barrier();
 
-   protected:
+ protected:
     MemorySystem memory_system_;
     const Config *config_;
     uint8_t *pmemAddr_;
@@ -86,7 +90,7 @@ class TransactionGenerator {
 };
 
 class AddTransactionGenerator : public TransactionGenerator {
-   public:
+ public:
     AddTransactionGenerator(const std::string& config_file,
                             const std::string& output_dir,
                             uint64_t n,
@@ -101,7 +105,7 @@ class AddTransactionGenerator : public TransactionGenerator {
     void GetResult() override;
     void CheckResult() override;
 
-   private:
+ private:
     uint8_t *x_, *y_, *z_;
     uint64_t n_;
     uint64_t addr_x_, addr_y_;
@@ -112,7 +116,7 @@ class AddTransactionGenerator : public TransactionGenerator {
 
 
 class GemvTransactionGenerator : public TransactionGenerator {
-   public:
+ public:
     GemvTransactionGenerator(const std::string& config_file,
                              const std::string& output_dir,
                              uint64_t m,
@@ -128,7 +132,7 @@ class GemvTransactionGenerator : public TransactionGenerator {
     void GetResult() override;
     void CheckResult() override;
 
-   private:
+ private:
     void ExecuteBank(int bank);
 
     uint8_t *A_, *x_, *y_;
@@ -142,4 +146,5 @@ class GemvTransactionGenerator : public TransactionGenerator {
 };
 
 }  // namespace dramsim3
-#endif
+
+#endif // __TRANSACTION_GENERATOR_H

@@ -8,11 +8,11 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
-#include "pim_config.h"
-#include "pim_utils.h"
-#include "configuration.h"
-#include "common.h"
-#include "half.hpp"
+#include "./pim_config.h"
+#include "./pim_utils.h"
+#include "./configuration.h"
+#include "./common.h"
+#include "./half.hpp"
 
 namespace dramsim3 {
 
@@ -38,30 +38,31 @@ class PimInstruction{
 class PimUnit {
  public:
     PimUnit(Config &config, int id);
- 	int AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataPtr);
-	void SetSrf(uint64_t hex_addr, uint8_t* DataPtr);
-	void SetGrf(uint64_t hex_addr, uint8_t* DataPtr);
-	void SetCrf(uint64_t hex_addr, uint8_t* DataPtr);
-	void init(uint8_t* pmemAddr, uint64_t pmemAddr_size, unsigned int burstSize);
-	bool DebugMode();
-	void PrintPIM_IST(PimInstruction inst);
-	void PrintOperand(int op_id);
+    int AddTransaction(uint64_t hex_addr, bool is_write, uint8_t* DataPtr);
+    void SetSrf(uint64_t hex_addr, uint8_t* DataPtr);
+    void SetGrf(uint64_t hex_addr, uint8_t* DataPtr);
+    void SetCrf(uint64_t hex_addr, uint8_t* DataPtr);
+    void init(uint8_t* pmemAddr, uint64_t pmemAddr_size,
+              unsigned int burstSize);
+    bool DebugMode();
+    void PrintPIM_IST(PimInstruction inst);
+    void PrintOperand(int op_id);
 
-	void PushCrf(int CRF_idx, uint8_t* DataPtr);
-	void SetOperandAddr(uint64_t hex_addr);
+    void PushCrf(int CRF_idx, uint8_t* DataPtr);
+    void SetOperandAddr(uint64_t hex_addr);
     void Execute();
-	void _ADD();
+    void _ADD();
     void _MUL();
     void _MAC();
     void _MAD();
     void _MOV();
-    
-	PimInstruction CRF[32];
+
+    PimInstruction CRF[32];
     uint8_t PPC;
     int LC;
 
-	int pim_id;
-	int debug_cnt;
+    int pim_id;
+    int debug_cnt;
 
     unit_t *GRF_A_;
     unit_t *GRF_B_;
@@ -72,16 +73,15 @@ class PimUnit {
     unit_t *src0;
     unit_t *src1;
     unit_t *bank_data_;
-	
-	uint8_t* pmemAddr_;
-	uint64_t pmemAddr_size_;
-	unsigned int burstSize_;
-  
-  protected:
-	Config &config_;
 
+    uint8_t* pmemAddr_;
+    uint64_t pmemAddr_size_;
+    unsigned int burstSize_;
+
+ protected:
+    Config &config_;
 };
 
-} // namespace dramsim3
+}  // namespace dramsim3
 
 #endif  // PIMUNIT_H_
