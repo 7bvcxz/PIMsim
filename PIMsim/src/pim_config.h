@@ -2,7 +2,7 @@
 #define __CONFIG_H_
 
 /////////////////- set unit size - ///////////////////
-typedef uint16_t    unit_t;
+typedef uint16_t          unit_t;
 #define debug_mode
 #define watch_pimindex    1
 //////////////////////////////////////////////////////
@@ -11,7 +11,7 @@ typedef uint16_t    unit_t;
 #define EXIT_END          222
 
 // SIZE IS BYTE
-#define UNIT_SIZE         (sizeof(unit_t))
+#define UNIT_SIZE         (int)(sizeof(unit_t))
 #define WORD_SIZE         32
 #define UNITS_PER_WORD    (WORD_SIZE / UNIT_SIZE)
 

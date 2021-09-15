@@ -6,8 +6,8 @@ namespace dramsim3 {
 
 int debug_cnt;
 PimUnit::PimUnit(Config &config, int id)
-  : config_(config),
-	pim_id(id)
+  : pim_id(id),
+    config_(config)
 {
     PPC = 0;
     LC  = 0;
@@ -20,12 +20,12 @@ PimUnit::PimUnit(Config &config, int id)
     bank_data_ = (unit_t*) malloc(WORD_SIZE);
 	dst = (unit_t*) malloc(WORD_SIZE);
 
-    for(int i=0; i< WORD_SIZE / sizeof(unit_t); i++) dst[i] = 0;
-    for(int i=0; i< GRF_SIZE / sizeof(unit_t); i++) {
+    for(int i=0; i< WORD_SIZE / (int)sizeof(unit_t); i++) dst[i] = 0;
+    for(int i=0; i< GRF_SIZE / (int)sizeof(unit_t); i++) {
         GRF_A_[i] = 0;
         GRF_B_[i] = 0;
     }
-    for(int i=0; i< SRF_SIZE / sizeof(unit_t); i++) {
+    for(int i=0; i< SRF_SIZE / (int)sizeof(unit_t); i++) {
         SRF_A_[i] = 0;
         SRF_M_[i] = 0;
     }
