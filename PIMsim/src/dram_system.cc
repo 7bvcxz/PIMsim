@@ -96,6 +96,14 @@ void BaseDRAMSystem::ResetStats() {
     }
 }
 
+//void BaseDRAMSystem::RegisterCallbacks(
+//    std::function<void(uint64_t)> read_callback,
+//    std::function<void(uint64_t)> write_callback) {
+//    // TODO(a) this should be propagated to controllers
+//    read_callback_ = read_callback;
+//    write_callback_ = write_callback;
+// }
+
 bool BaseDRAMSystem::IsPendingTransaction() {
     for (size_t i = 0; i < ctrls_.size(); i++) {
         if (ctrls_[i]->IsPendingTransaction())

@@ -171,8 +171,8 @@ $ ./pimdramsim3main ../configs/HBM2_4Gb_test.ini --pim-api=gemv --gemv-m=8192 --
 
 ## 5. Debug Mode
 ```
-Can set debug mode in pim_config.h
-Upgrade in progress,,, (written at 0913) (maybe finished at 0914)
+Can set 'debug mode' in pim_config.h
+Also can watch the work flow related to certain pim_unit by setting 'watch_pimindex' in pim_config.h
 ```
 
 ## 6. Clean

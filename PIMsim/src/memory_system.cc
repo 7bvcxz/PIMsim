@@ -6,7 +6,7 @@ MemorySystem::MemorySystem(const std::string &config_file,
                            std::function<void(uint64_t, uint8_t*)> read_callback,
                            std::function<void(uint64_t)> write_callback)
     : config_(new Config(config_file, output_dir)) {
-    // TODO: ideal memory type?
+    // TODO(a): ideal memory type?
     if (config_->IsHMC()) {
         dram_system_ = new HMCMemorySystem(*config_, output_dir, read_callback,
                                            write_callback);
@@ -32,9 +32,9 @@ int MemorySystem::GetBurstLength() const { return config_->BL; }
 int MemorySystem::GetQueueSize() const { return config_->trans_queue_size; }
 
 // void MemorySystem::RegisterCallbacks(
-//     std::function<void(uint64_t)> read_callback,
-//     std::function<void(uint64_t)> write_callback) {
-//     dram_system_->RegisterCallbacks(read_callback, write_callback);
+//    std::function<void(uint64_t, uint8_t*)> read_callback,
+//    std::function<void(uint64_t)> write_callback) {
+//    dram_system_->RegisterCallbacks(read_callback, write_callback);
 // }
 
 bool MemorySystem::WillAcceptTransaction(uint64_t hex_addr,
@@ -58,9 +58,9 @@ MemorySystem* GetMemorySystem(const std::string &config_file, const std::string 
 
 void MemorySystem::init(uint8_t* pmemAddr, uint64_t size, unsigned int burstSize) {
 	dram_system_->init(pmemAddr, size, burstSize);
-    //dram_system_->pmemAddr = pmemAddr;
-    //dram_system_->pmemAddr_size = size;
-    //dram_system_->burstSize = burstSize;
+    // dram_system_->pmemAddr = pmemAddr;
+    // dram_system_->pmemAddr_size = size;
+    // dram_system_->burstSize = burstSize;
 }
 
 bool MemorySystem::IsPendingTransaction() {

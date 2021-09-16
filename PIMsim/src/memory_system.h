@@ -12,13 +12,13 @@ namespace dramsim3 {
 
 // This should be the interface class that deals with CPU
 class MemorySystem {
-   public:
+ public:
     MemorySystem(const std::string &config_file, const std::string &output_dir,
                  std::function<void(uint64_t, uint8_t*)> read_callback,
                  std::function<void(uint64_t)> write_callback);
     ~MemorySystem();
     void ClockTick();
-    // void RegisterCallbacks(std::function<void(uint64_t)> read_callback,
+    // void RegisterCallbacks(std::function<void(uint64_t, uint8_t*)> read_callback,
     //                        std::function<void(uint64_t)> write_callback);
     double GetTCK() const;
     int GetBusBits() const;
@@ -35,7 +35,7 @@ class MemorySystem {
     bool IsPendingTransaction();
     void SetWriteBufferThreshold(int threshold);
 
-   private:
+ private:
     // These have to be pointers because Gem5 will try to push this object
     // into container which will invoke a copy constructor, using pointers
     // here is safe
