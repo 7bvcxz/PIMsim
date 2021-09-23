@@ -200,7 +200,7 @@ void Controller::ScheduleTransaction() {
     if (write_draining_ == 0 && !is_unified_queue_) {
         // we basically have a upper and lower threshold for write buffer
         if ((write_buffer_.size() >= write_buffer_.capacity()) ||
-            (write_buffer_.size() > write_buffer_threshold_ && cmd_queue_.QueueEmpty())) {
+            ((int)write_buffer_.size() > write_buffer_threshold_ && cmd_queue_.QueueEmpty())) {
             write_draining_ = write_buffer_.size();
         }
     }
@@ -210,6 +210,7 @@ void Controller::ScheduleTransaction() {
                           : write_draining_ > 0 ? write_buffer_ : read_queue_;
     for (auto it = queue.begin(); it != queue.end(); it++) {
         auto cmd = TransToCommand(*it);
+        //std::cout << (*it).executed_bankmode << std::endl;  ok
         if (cmd_queue_.WillAcceptCommand(cmd.Rank(), cmd.Bankgroup(),
                                          cmd.Bank())) {
             if (!is_unified_queue_ && cmd.IsWrite()) {
@@ -221,6 +222,7 @@ void Controller::ScheduleTransaction() {
                 write_draining_ -= 1;
             }
             cmd_queue_.AddCommand(cmd);
+            //std::cout << cmd.executed_bankmode << std::endl;  ok
             queue.erase(it);
             break;
         }
@@ -228,6 +230,7 @@ void Controller::ScheduleTransaction() {
 }
 
 void Controller::IssueCommand(const Command &cmd) {
+//std::cout << cmd.executed_bankmode;
 #ifdef CMD_TRACE
     cmd_trace_ << std::left << std::setw(18) << clk_ << " " << cmd << std::endl;
 #endif  // CMD_TRACE
@@ -262,6 +265,7 @@ void Controller::IssueCommand(const Command &cmd) {
         pending_wr_q_.erase(it);
     }
     // must update stats before states (for row hits)
+    //std::cout << cmd.executed_bankmode;
     UpdateCommandStats(cmd);
     channel_state_.UpdateTimingAndStates(cmd, clk_);
 }
@@ -275,7 +279,7 @@ Command Controller::TransToCommand(const Transaction &trans) {
         cmd_type = trans.is_write ? CommandType::WRITE_PRECHARGE
                                   : CommandType::READ_PRECHARGE;
     }
-    return Command(cmd_type, addr, trans.addr);
+    return Command(cmd_type, addr, trans.addr, trans.executed_bankmode);    // >> mmm <<
 }
 
 int Controller::QueueUsage() const { return cmd_queue_.QueueUsage(); }
@@ -308,7 +312,14 @@ void Controller::UpdateCommandStats(const Command &cmd) {
     switch (cmd.cmd_type) {
         case CommandType::READ:
         case CommandType::READ_PRECHARGE:
-            simple_stats_.Increment("num_read_cmds");                   // number of read/readp commands
+            // >> mmm
+            if(cmd.executed_bankmode == "SB") {
+                simple_stats_.Increment("num_read_cmds");                   // number of read/readp commands
+            } else {
+                for(int i=0; i<config_.banks; i++)
+                    simple_stats_.Increment("num_read_cmds");                   // number of read/readp commands
+            }
+            // mmm <<
             if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
                                            cmd.Bank()) != 0) {
                 simple_stats_.Increment("num_read_row_hits");           // number of read row buffer hits     no touch I think
@@ -316,28 +327,57 @@ void Controller::UpdateCommandStats(const Command &cmd) {
             break;
         case CommandType::WRITE:
         case CommandType::WRITE_PRECHARGE:
-            simple_stats_.Increment("num_write_cmds");                   // number of write/writep commands
+            // >> mmm
+            if(cmd.executed_bankmode == "SB") {
+                simple_stats_.Increment("num_write_cmds");                   // number of write/writep commands
+            } else {
+                for(int i=0; i<config_.banks; i++)
+                    simple_stats_.Increment("num_write_cmds");
+            }
+
+            // mmm <<
             if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
                                            cmd.Bank()) != 0) {
                 simple_stats_.Increment("num_write_row_hits");           // number of write row buffer hits     no touch I think
             }
             break;
         case CommandType::ACTIVATE:
-            simple_stats_.Increment("num_act_cmds");                     // number of act commands      
+            // >> mmm
+            if(cmd.executed_bankmode == "SB") {
+                simple_stats_.Increment("num_act_cmds");                     // number of act commands      
+            } else {
+                for(int i=0; i<config_.banks; i++)
+                    simple_stats_.Increment("num_act_cmds");
+            }
+            // mmm <<
             break;
         case CommandType::PRECHARGE:
-            simple_stats_.Increment("num_pre_cmds");                     // number of pre commands        
+            // >> mmm
+            if(cmd.executed_bankmode == "SB") {
+                simple_stats_.Increment("num_pre_cmds");                     // number of pre commands        
+            } else {
+                for(int i=0; i<config_.banks; i++)
+                    simple_stats_.Increment("num_pre_cmds");
+            }
+            // mmm <<
             break;
-        case CommandType::REFRESH:
+        case CommandType::REFRESH:                                        // >> hmm point    I remember this is about rank refresh
             simple_stats_.Increment("num_ref_cmds");                     // number of refresh commands        
             break;
         case CommandType::REFRESH_BANK:
-            simple_stats_.Increment("num_refb_cmds");                    // number of refresh bank commands          
+            // >> mmm
+            if(cmd.executed_bankmode == "SB") {
+                simple_stats_.Increment("num_refb_cmds");                     // number of pre commands        
+            } else {
+                for(int i=0; i<config_.banks; i++)
+                    simple_stats_.Increment("num_refb_cmds");
+            }
+            // mmm <<
             break;
-        case CommandType::SREF_ENTER:
+        case CommandType::SREF_ENTER:  // no touch
             simple_stats_.Increment("num_srefe_cmds");                   // number of self ref ~      no touch       
             break;
-        case CommandType::SREF_EXIT:
+        case CommandType::SREF_EXIT:  // no touch
             simple_stats_.Increment("num_srefx_cmds");                   // number of self ref exit ~     no touch
             break;
         default:

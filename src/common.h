@@ -70,6 +70,8 @@ struct Command {
     Command() : cmd_type(CommandType::SIZE), hex_addr(0) {}
     Command(CommandType cmd_type, const Address& addr, uint64_t hex_addr)
         : cmd_type(cmd_type), addr(addr), hex_addr(hex_addr) {}
+    Command(CommandType cmd_type, const Address& addr, uint64_t hex_addr, std::string executed_bankmode)    // >> mmm <<
+        : cmd_type(cmd_type), addr(addr), hex_addr(hex_addr), executed_bankmode(executed_bankmode) {}
     // Command(const Command& cmd) {}
 
     bool IsValid() const { return cmd_type != CommandType::SIZE; }
@@ -94,6 +96,7 @@ struct Command {
     CommandType cmd_type;
     Address addr;
     uint64_t hex_addr;
+    std::string executed_bankmode;  // >> mmm <<
 
     int Channel() const { return addr.channel; }
     int Rank() const { return addr.rank; }

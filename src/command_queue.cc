@@ -20,7 +20,7 @@ CommandQueue::CommandQueue(int channel_id, const Config& config,
         queue_structure_ = QueueStructure::PER_RANK;
         num_queues_ = config_.ranks;
     } else {
-        std::cerr << "Unsupportted queueing structure "
+        std::cerr << "Unsupported queueing structure "
                   << config_.queue_structure << std::endl;
         AbruptExit(__FILE__, __LINE__);
     }
@@ -190,6 +190,7 @@ Command CommandQueue::GetFirstReadyInQueue(CMDQueue& queue) const {
                 continue;
             }
         }
+        // std::cout << cmd.executed_bankmode;  error!!
         return cmd;
     }
     return Command();

@@ -3,7 +3,7 @@
 
 /////////////////- set unit size - ///////////////////
 typedef uint16_t          unit_t;
-#define debug_mode
+//#define debug_mode
 #define watch_pimindex    1
 //////////////////////////////////////////////////////
 

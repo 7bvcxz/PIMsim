@@ -87,7 +87,7 @@ Command BankState::GetReadyCommand(const Command& cmd, uint64_t clk) const {
 
     if (required_type != CommandType::SIZE) {
         if (clk >= cmd_timing_[static_cast<int>(required_type)]) {
-            return Command(required_type, cmd.addr, cmd.hex_addr);
+            return Command(required_type, cmd.addr, cmd.hex_addr, cmd.executed_bankmode);    // >> mmm <<
         }
     }
     return Command();
