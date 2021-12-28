@@ -32,6 +32,9 @@ int main(int argc, const char **argv) {
     args::ValueFlag<uint64_t> add_n_arg(
         parser, "add_n", "[ADD] Number of elements in vector x, y and z",
         {"add-n"}, 1024*1024);
+    args::ValueFlag<uint64_t> mul_n_arg(
+        parser, "mul_n", "[MUL] Number of elements in vector x, y and z",
+        {"mul-n"}, 1024*1024);
     args::ValueFlag<uint64_t> gemv_m_arg(
         parser, "gemv_m", "[GEMV] Number of rows of the matrix A",
         {"gemv-m"}, 4096);
@@ -88,6 +91,26 @@ int main(int argc, const char **argv) {
 
         // Define Transaction generator for ADD computation
         tx_generator = new AddTransactionGenerator(config_file, output_dir,
+                                                   n, x, y, z);
+    } else if (pim_api == "mul") {
+        uint64_t n = args::get(mul_n_arg);
+
+        // Define input vector x, y
+        uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * n);
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * n);
+        // Define output vector z
+        uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * n);
+
+        // Fill input operands with random value
+        for (int i=0; i< n; i++) {
+            half h_x = half(f32rng());
+            half h_y = half(f32rng());
+            ((uint16_t*)x)[i] = *reinterpret_cast<uint16_t*>(&h_x);
+            ((uint16_t*)y)[i] = *reinterpret_cast<uint16_t*>(&h_y);
+        }
+
+        // Define Transaction generator for ADD computation
+        tx_generator = new MulTransactionGenerator(config_file, output_dir,
                                                    n, x, y, z);
     } else if (pim_api == "gemv") {
         uint64_t m = args::get(gemv_m_arg);

@@ -76,25 +76,25 @@ void PimUnit::PrintPIM_IST(PimInstruction inst) {
     } else if (inst.pim_op_type == (PIM_OP_TYPE)1) {  // DATA
         PrintOperand((int)inst.dst);
         if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << inst.dst_idx;
-        else std::cout << "A";
-        std::cout << "\t";
+        else std::cout << "(A)";
+        std::cout << "   \t";
         PrintOperand((int)inst.src0);
         if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << inst.src0_idx;
-        else std::cout << "A";
-        std::cout << "\t";
+        else std::cout << "(A)";
+        std::cout << "   \t";
     } else if(inst.pim_op_type == (PIM_OP_TYPE)2) {  // ALU
         PrintOperand((int)inst.dst);
         if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << inst.dst_idx;
-        else std::cout << "A";
-        std::cout << "\t";
+        else std::cout << "(A)";
+        std::cout << "   \t";
         PrintOperand((int)inst.src0);
         if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << inst.src0_idx;
-        else std::cout << "A";
-        std::cout << "\t";
+        else std::cout << "(A)";
+        std::cout << "   \t";
         PrintOperand((int)inst.src1);
         if (inst.is_aam == 0 || inst.is_src1_fix)  std::cout << inst.src1_idx;
-        else std::cout << "A";
-        std::cout << "\t";
+        else std::cout << "(A)";
+        std::cout << "   \t";
     }
     std::cout << "\n";
 }
