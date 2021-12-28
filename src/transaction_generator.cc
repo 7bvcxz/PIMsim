@@ -326,25 +326,20 @@ void GemvTransactionGenerator::Initialize() {
     for (int i=0; i< 32; i++)
         ukernel_gemv_[i] = 0b00000000000000000000000000000000; // initialize
 
-    ukernel_gemv_[0] = 0b10100100001000001000001100000000; // MAC(AAM011)  GRF_B[0]  BANK  SRF_M
-    ukernel_gemv_[1] = 0b00010000000001000000100000000111; // JUMP         -1        7
+    ukernel_gemv_[0] = 0b10100100001000001000100000000000; // MAC(AAM)   GRF_B[0]  BANK  SRF_M
+    ukernel_gemv_[1] = 0b00010000000001000000100000000111; // JUMP       -1        7
     ukernel_gemv_[2] = 0b00100000000000000000000000000000; // EXIT
 
     // Define ukernel for reducing output data from ukernel_gemv + write to
     // physical memory
-    ukernel_reduce_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
+    ukernel_gemv_last_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
     for (int i=0; i< 32; i++)
-		ukernel_reduce_[i] = 0b00000000000000000000000000000000; // initialize
+		ukernel_gemv_last_[i] = 0b00000000000000000000000000000000; // initialize
 
-	ukernel_reduce_[0] = 0b10000100100100000000000000000001; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[1]
-    ukernel_reduce_[1] = 0b10000100100100000000000000000010; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[2]
-    ukernel_reduce_[2] = 0b10000100100100000000000000000011; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[3]
-    ukernel_reduce_[3] = 0b10000100100100000000000000000100; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[4]
-    ukernel_reduce_[4] = 0b10000100100100000000000000000101; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[5]
-    ukernel_reduce_[5] = 0b10000100100100000000000000000110; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[6]
-    ukernel_reduce_[6] = 0b10000100100100000000000000000111; // ADD  GRF_B[0]  GRF_B[0]  GRF_B[7]
-    ukernel_reduce_[7] = 0b01000000100000000000000000000000; // MOV  BANK      GRF_B[0]
-    ukernel_reduce_[8] = 0b00100000000000000000000000000000; // EXIT
+    ukernel_gemv_last_[0] = 0b10100100001000001000100000000000; // MAC(AAM)  GRF_B[0]  BANK  SRF_M
+    ukernel_gemv_last_[1] = 0b00010000000001000000100000000111; // JUMP      -1        7
+    ukernel_gemv_last_[2] = 0b01000000100000000000000000000000; // MOV       BANK      GRF_B[0]
+    ukernel_gemv_last_[3] = 0b00100000000000000000000000000000; // EXIT
 }
 
 // Write operand data and μkernel to physical memory and PIM registers
@@ -419,6 +414,18 @@ void GemvTransactionGenerator::ExecuteBank(int bank) {
             }
             Barrier();
 
+            // if last gemv ukernel to execute, add new gemv ukernel (= ukernel_gemv_last)
+            if (ro * NUM_WORD_PER_ROW / 8 + co_o >= ukernel_count_per_pim_-1) {
+                for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+                    for (int co = 0; co < 4; co++) {
+                        Address addr(ch, 0, 0, 0, MAP_CRF, co);
+                        uint64_t hex_addr = ReverseAddressMapping(addr);
+                        TryAddTransaction(hex_addr, true, (uint8_t*)&ukernel_gemv_last_[co*8]);
+                    }
+                }
+                Barrier();
+            }
+
             // Mode transition: AB -> AB-PIM
             #ifdef debug_mode
             std::cout << "\nHOST:\t[2] AB -> PIM \n";
@@ -445,48 +452,19 @@ void GemvTransactionGenerator::ExecuteBank(int bank) {
             }
             Barrier();
 
-            // Check that all data operations have been completed
-            if (ro * NUM_WORD_PER_ROW / 8 + co_o >= ukernel_count_per_pim_)
+            // for the last gemv ukernel, move result to bank
+            if (ro * NUM_WORD_PER_ROW / 8 + co_o >= ukernel_count_per_pim_-1) {
+                for (int uker = 0; uker < 1; uker++) {
+                    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+                        Address addr(ch, 0, 0, bank, 0, 0);
+                        uint64_t hex_addr = ReverseAddressMapping(addr);
+                        TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
+                    }
+                    Barrier();
+                }
                 break;
+            }
         }
-    }
-
-    // Program reduce ukernel
-    #ifdef debug_mode
-    std::cout << "\nHOST:\tProgram reduce μkernel \n";
-    #endif
-    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-        for (int co = 0; co < 4; co++) {
-            Address addr(ch, 0, 0, 0, MAP_CRF, co);
-            uint64_t hex_addr = ReverseAddressMapping(addr);
-            TryAddTransaction(hex_addr, true, (uint8_t*)&ukernel_reduce_[co*8]);
-        }
-    }
-    Barrier();
-
-    // Mode transition: AB -> AB-PIM
-    #ifdef debug_mode
-    std::cout << "\nHOST:\t[4] AB -> PIM \n";
-    #endif
-    *data_temp_ |= 1;
-    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-        Address addr(ch, 0, 0, 0, MAP_PIM_OP_MODE, 0);
-        uint64_t hex_addr = ReverseAddressMapping(addr);
-        TryAddTransaction(hex_addr, true, data_temp_);
-    }
-    Barrier();
-
-    // Execute ukernel 0~7 + AB-PIM -> AB
-    #ifdef debug_mode
-    std::cout << "\nHOST:\tExecute μkernel 0-7 + [5] PIM -> AB \n";
-    #endif
-    for (int uker = 0; uker < 8; uker++) {
-        for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-            Address addr(ch, 0, 0, bank, 0, 0);
-            uint64_t hex_addr = ReverseAddressMapping(addr);
-            TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
-        }
-        Barrier();
     }
 
     // reset GRF_B
@@ -535,21 +513,13 @@ void GemvTransactionGenerator::CheckResult() {
 
     for (int m = 0; m < m_; m++) {
         half h_answer(0);
-        for (int n_grf = 0; n_grf < 8; n_grf++) {
-            half h_answer_one_grf(0);
-			for (int no = 0; no*64+n_grf*8 < n_; no++) {
-			    for (int ni = 0; ni < 8; ni++) {
-				  int n = no * 64 + n_grf * 8 + ni;
-				  half h_A(*reinterpret_cast<half*>(&((uint16_t*)A_)[m*n_+n]));
-				  half h_x(*reinterpret_cast<half*>(&((uint16_t*)x_)[n]));
-				  h_answer_one_grf = fma(h_A, h_x, h_answer_one_grf);
-				}
-            }
-			h_answer = h_answer + h_answer_one_grf;
+        for (int n = 0; n < n_; n++) {
+			half h_A(*reinterpret_cast<half*>(&((uint16_t*)A_)[m*n_+n]));
+			half h_x(*reinterpret_cast<half*>(&((uint16_t*)x_)[n]));
+            h_answer = fma(h_A, h_x, h_answer);
         }
         ((uint16_t*)answer)[m] = *reinterpret_cast<uint16_t*>(&h_answer);
     }
-    
 
     // Calculate error
     for (int m=0; m< m_; m++) {

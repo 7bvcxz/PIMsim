@@ -151,7 +151,7 @@ class GemvTransactionGenerator : public TransactionGenerator {
     uint64_t ukernel_access_size_;
     uint64_t ukernel_count_per_pim_;
     uint32_t *ukernel_gemv_;
-    uint32_t *ukernel_reduce_;
+    uint32_t *ukernel_gemv_last_;
 };
 
 class CPUAddTransactionGenerator : public TransactionGenerator {

@@ -75,20 +75,25 @@ void PimUnit::PrintPIM_IST(PimInstruction inst) {
         std::cout << (int)inst.imm1 << "\t";
     } else if (inst.pim_op_type == (PIM_OP_TYPE)1) {  // DATA
         PrintOperand((int)inst.dst);
-        if (inst.is_aam == 0)  std::cout << inst.dst_idx;
+        if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << inst.dst_idx;
+        else std::cout << "A";
         std::cout << "\t";
         PrintOperand((int)inst.src0);
-        if (inst.is_aam == 0)  std::cout << inst.src0_idx;
+        if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << inst.src0_idx;
+        else std::cout << "A";
         std::cout << "\t";
     } else if(inst.pim_op_type == (PIM_OP_TYPE)2) {  // ALU
         PrintOperand((int)inst.dst);
-        if (inst.is_aam == 0)  std::cout << inst.dst_idx;
+        if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << inst.dst_idx;
+        else std::cout << "A";
         std::cout << "\t";
         PrintOperand((int)inst.src0);
-        if (inst.is_aam == 0)  std::cout << inst.src0_idx;
+        if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << inst.src0_idx;
+        else std::cout << "A";
         std::cout << "\t";
         PrintOperand((int)inst.src1);
-        if (inst.is_aam == 0)  std::cout << inst.src1_idx;
+        if (inst.is_aam == 0 || inst.is_src1_fix)  std::cout << inst.src1_idx;
+        else std::cout << "A";
         std::cout << "\t";
     }
     std::cout << "\n";
@@ -142,8 +147,8 @@ void PimUnit::PushCrf(int CRF_idx, uint8_t* DataPtr) {
     CRF[CRF_idx].PIM_OP = BitToPIM_OP(DataPtr);
     CRF[CRF_idx].is_aam = CheckAam(DataPtr);
     CRF[CRF_idx].is_dst_fix = CheckDstFix(DataPtr);
-    CRF[CRF_idx].is_src0_fix = CheckDstFix(DataPtr);
-    CRF[CRF_idx].is_src1_fix = CheckDstFix(DataPtr);
+    CRF[CRF_idx].is_src0_fix = CheckSrc0Fix(DataPtr);
+    CRF[CRF_idx].is_src1_fix = CheckSrc1Fix(DataPtr);
 
     switch (CRF[CRF_idx].PIM_OP) {
         case PIM_OPERATION::ADD:
