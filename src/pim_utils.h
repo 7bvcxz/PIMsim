@@ -18,6 +18,9 @@ int BitToSrc2Idx(uint8_t* DataPtr);
 int BitToImm0(uint8_t* DataPtr);
 int BitToImm1(uint8_t* DataPtr);
 bool CheckAam(uint8_t* DataPtr);
+bool CheckDstFix(uint8_t* DataPtr);
+bool CheckSrc0Fix(uint8_t* DataPtr);
+bool CheckSrc1Fix(uint8_t* DataPtr);
 bool CheckReLU(uint8_t* DataPtr);
 
 #endif  // __UTILS_H_

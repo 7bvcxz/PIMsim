@@ -326,8 +326,8 @@ void GemvTransactionGenerator::Initialize() {
     for (int i=0; i< 32; i++)
         ukernel_gemv_[i] = 0b00000000000000000000000000000000; // initialize
 
-    ukernel_gemv_[0] = 0b10100100001000001000000000000000; // MAC(AAM)  GRF_B  BANK  SRF_M
-    ukernel_gemv_[1] = 0b00010000000001000000100000000111; // JUMP      -1     7
+    ukernel_gemv_[0] = 0b10100100001000001000001100000000; // MAC(AAM011)  GRF_B[0]  BANK  SRF_M
+    ukernel_gemv_[1] = 0b00010000000001000000100000000111; // JUMP         -1        7
     ukernel_gemv_[2] = 0b00100000000000000000000000000000; // EXIT
 
     // Define ukernel for reducing output data from ukernel_gemv + write to

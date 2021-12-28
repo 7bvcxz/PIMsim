@@ -8,6 +8,7 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
+#include <cmath>
 #include "./pim_config.h"
 #include "./pim_utils.h"
 #include "./configuration.h"
@@ -30,6 +31,10 @@ class PimInstruction{
     int src0_idx;
     int src1_idx;
     int src2_idx;
+
+    bool is_dst_fix;
+    bool is_src0_fix;
+    bool is_src1_fix;
 
     int imm0;
     int imm1;

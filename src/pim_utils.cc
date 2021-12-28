@@ -48,5 +48,17 @@ bool CheckAam(uint8_t* DataPtr) {
 }
 
 bool CheckReLU(uint8_t* DataPtr) {
-    return (bool)((DataPtr[1] >> 5) & 0b0001);
+    return (bool)((DataPtr[1] >> 4) & 0b0001);
+}
+
+bool CheckDstFix(uint8_t* DataPtr) {
+    return (bool)((DataPtr[1] >> 3) & 0b00001);
+}
+
+bool CheckSrc0Fix(uint8_t* DataPtr) {
+    return (bool)(DataPtr[0] >> 7);
+}
+
+bool CheckSrc1Fix(uint8_t* DataPtr) {
+    return (bool)((DataPtr[0] >> 3) & 0b00001);
 }

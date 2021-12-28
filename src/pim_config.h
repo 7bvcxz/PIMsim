@@ -6,7 +6,7 @@ using half_float::half;
 
 /////////////////- set unit size - ///////////////////
 typedef half              unit_t;
-//#define debug_mode
+#define debug_mode
 #define watch_pimindex    1
 //////////////////////////////////////////////////////
 

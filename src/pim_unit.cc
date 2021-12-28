@@ -61,8 +61,8 @@ void PimUnit::PrintOperand(int op_id) {
 // Print Instruction according to PIM operation id
 void PimUnit::PrintPIM_IST(PimInstruction inst) {
     if (inst.PIM_OP == (PIM_OPERATION)0) std::cout << "NOP\t";
-    else if (inst.PIM_OP == (PIM_OPERATION) 1) std::cout << "JUMP\t";
-    else if (inst.PIM_OP ==(PIM_OPERATION) 2) std::cout << "EXIT\t";
+    else if (inst.PIM_OP == (PIM_OPERATION)1) std::cout << "JUMP\t";
+    else if (inst.PIM_OP == (PIM_OPERATION)2) std::cout << "EXIT\t";
     else if (inst.PIM_OP == (PIM_OPERATION)4) std::cout << "MOV\t";
     else if (inst.PIM_OP == (PIM_OPERATION)5) std::cout << "FILL\t";
     else if (inst.PIM_OP == (PIM_OPERATION)8) std::cout << "ADD\t";
@@ -141,6 +141,9 @@ void PimUnit::SetCrf(uint64_t hex_addr, uint8_t* DataPtr) {
 void PimUnit::PushCrf(int CRF_idx, uint8_t* DataPtr) {
     CRF[CRF_idx].PIM_OP = BitToPIM_OP(DataPtr);
     CRF[CRF_idx].is_aam = CheckAam(DataPtr);
+    CRF[CRF_idx].is_dst_fix = CheckDstFix(DataPtr);
+    CRF[CRF_idx].is_src0_fix = CheckDstFix(DataPtr);
+    CRF[CRF_idx].is_src1_fix = CheckDstFix(DataPtr);
 
     switch (CRF[CRF_idx].PIM_OP) {
         case PIM_OPERATION::ADD:
@@ -169,9 +172,9 @@ void PimUnit::PushCrf(int CRF_idx, uint8_t* DataPtr) {
             CRF[CRF_idx].imm1 = BitToImm1(DataPtr);
             break;
         case PIM_OPERATION::JUMP:
-            CRF[CRF_idx].pim_op_type = PIM_OP_TYPE::CONTROL;
             CRF[CRF_idx].imm0 = CRF_idx + BitToImm0(DataPtr);
             CRF[CRF_idx].imm1 = BitToImm1(DataPtr);
+            CRF[CRF_idx].pim_op_type = PIM_OP_TYPE::CONTROL;
             break;
         case PIM_OPERATION::EXIT:
             CRF[CRF_idx].pim_op_type = PIM_OP_TYPE::CONTROL;
@@ -263,35 +266,79 @@ void PimUnit::SetOperandAddr(uint64_t hex_addr) {
     // set _GRF_A, _GRF_B operand address when AAM mode
     Address addr = config_.AddressMapping(hex_addr);
     if (CRF[PPC].is_aam) {
-        int CA = addr.column;
-        int RA = addr.row;
-        int A_idx = CA % 8;
-        int B_idx = CA / 8 + RA % 2 * 4;
-
+        int ADDR = addr.row * 32 + addr.column;
+        int dst_idx = int(ADDR / pow(2, CRF[PPC].dst_idx)) % 8;
+        int src0_idx = int(ADDR / pow(2, CRF[PPC].src0_idx)) % 8;
+        int src1_idx = int(ADDR / pow(2, CRF[PPC].src1_idx)) % 8;
+        // std::cout << A_idx << " " << B_idx << " " << dst_idx << " " << src0_idx << " " << src1_idx << std::endl;
+       
+        // int CA = addr.column;
+        // int RA = addr.row;
+        // int A_idx = CA % 8;
+        // int B_idx = CA / 8 + RA % 2 * 4;
+         
         // set dst address (AAM)
-        if (CRF[PPC].dst == PIM_OPERAND::GRF_A)
-            dst = GRF_A_ + A_idx * 16;
-        else if (CRF[PPC].dst == PIM_OPERAND::GRF_B)
-            dst = GRF_B_ + B_idx * 16;
+        if (CRF[PPC].dst == PIM_OPERAND::GRF_A) {
+            if (CRF[PPC].is_dst_fix) { 
+                dst = GRF_A_ + CRF[PPC].dst_idx * 16;
+            } else { 
+                dst = GRF_A_ + dst_idx * 16;
+            }
+        } else if (CRF[PPC].dst == PIM_OPERAND::GRF_B) {
+            if (CRF[PPC].is_dst_fix) {
+                dst = GRF_B_ + CRF[PPC].dst_idx * 16;
+            } else { 
+                dst = GRF_B_ + dst_idx * 16;
+            }
+        }
 
         // set src0 address (AAM)
-        if (CRF[PPC].src0 == PIM_OPERAND::GRF_A)
-            src0 = GRF_A_ + A_idx * 16;
-        else if (CRF[PPC].src0 == PIM_OPERAND::GRF_B)
-            src0 = GRF_B_ + B_idx * 16;
-        else if (CRF[PPC].src0 == PIM_OPERAND::SRF_A)
-            src0 = SRF_A_ + A_idx;
+        if (CRF[PPC].src0 == PIM_OPERAND::GRF_A) {
+            if (CRF[PPC].is_src0_fix) { 
+                src0 = GRF_A_ + CRF[PPC].src0_idx * 16;
+            } else {
+                src0 = GRF_A_ + src0_idx * 16; 
+            }
+        } else if (CRF[PPC].src0 == PIM_OPERAND::GRF_B) {
+            if (CRF[PPC].is_src0_fix) {
+                src0 = GRF_B_ + CRF[PPC].src0_idx * 16;
+            } else {
+                src0 = GRF_B_ + src0_idx * 16;
+            }
+        } else if (CRF[PPC].src0 == PIM_OPERAND::SRF_A) {
+            if (CRF[PPC].is_src0_fix) {
+                src0 = SRF_A_ + CRF[PPC].src0_idx * 16;
+            } else {
+                src0 = SRF_A_ + src0_idx;
+            }
+        }
 
         // set src1 address (AAM)
-        if (CRF[PPC].src1 == PIM_OPERAND::GRF_A)
-            src1 = GRF_A_ + A_idx * 16;
-        else if (CRF[PPC].src1 == PIM_OPERAND::GRF_B)
-            src1 = GRF_B_ + B_idx * 16;
-        else if (CRF[PPC].src1 == PIM_OPERAND::SRF_A)
-            src1 = SRF_A_ + A_idx;
-        else if (CRF[PPC].src1 == PIM_OPERAND::SRF_M)
-            src1 = SRF_M_ + A_idx;
-
+        if (CRF[PPC].src1 == PIM_OPERAND::GRF_A) {
+            if (CRF[PPC].is_src1_fix) {
+                src1 = GRF_A_ + CRF[PPC].src1_idx * 16;
+            } else {
+                src1 = GRF_A_ + src1_idx * 16;
+            }
+        } else if (CRF[PPC].src1 == PIM_OPERAND::GRF_B) {
+            if (CRF[PPC].is_src1_fix) {
+                src1 = GRF_B_ + CRF[PPC].src1_idx * 16;
+            } else {
+                src1 = GRF_B_ + src1_idx * 16;
+            }
+        } else if (CRF[PPC].src1 == PIM_OPERAND::SRF_A) {
+            if (CRF[PPC].is_src1_fix) {
+                src1 = SRF_A_ + CRF[PPC].src1_idx * 16;
+            } else {
+                src1 = SRF_A_ + src1_idx;
+            }
+        } else if (CRF[PPC].src1 == PIM_OPERAND::SRF_M) {
+            if (CRF[PPC].is_src1_fix) { 
+                src1 = SRF_M_ + CRF[PPC].src1_idx * 16;
+            } else {
+                src1 = SRF_M_ + src1_idx;
+            }
+        }
     } else {      // set _GRF_A, _GRF_B operand address when non-AAM mode
         // set dst address
         if (CRF[PPC].dst == PIM_OPERAND::GRF_A)
