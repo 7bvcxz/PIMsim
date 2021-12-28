@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 #include "./../ext/headers/args.hxx"
 #include "./transaction_generator.h"
 #include "half.hpp"
@@ -65,6 +66,9 @@ int main(int argc, const char **argv) {
     TransactionGenerator * tx_generator;
 
     // Define operands and Transaction generator for simulating computation
+	std::random_device random_device;
+	auto rng = std::mt19937(random_device());
+	auto f32rng = std::bind(std::normal_distribution<float>(0, 1), std::ref(rng));
     if (pim_api == "add") {
         uint64_t n = args::get(add_n_arg);
 
@@ -76,8 +80,8 @@ int main(int argc, const char **argv) {
 
         // Fill input operands with random value
         for (int i=0; i< n; i++) {
-            half h_x = half(rand() / static_cast<float>(RAND_MAX));
-            half h_y = half(rand() / static_cast<float>(RAND_MAX));
+            half h_x = half(f32rng());
+            half h_y = half(f32rng());
             ((uint16_t*)x)[i] = *reinterpret_cast<uint16_t*>(&h_x);
             ((uint16_t*)y)[i] = *reinterpret_cast<uint16_t*>(&h_y);
         }
@@ -97,10 +101,10 @@ int main(int argc, const char **argv) {
 
         // Fill input operands with random value
         for (int i=0; i< n; i++) {
-            half h_x = half(rand() / static_cast<float>(RAND_MAX));
+            half h_x = half(f32rng());
             ((uint16_t*)x)[i] = *reinterpret_cast<uint16_t*>(&h_x);
             for (int j=0; j< m; j++) {
-                half h_A = half(rand() / static_cast<float>(RAND_MAX));
+                half h_A = half(f32rng());
                 ((uint16_t*)A)[j*n+i] = *reinterpret_cast<uint16_t*>(&h_A);
             }
         }
@@ -111,25 +115,38 @@ int main(int argc, const char **argv) {
     }
     std::cout << C_GREEN << "Success Module Initialize" << C_NORMAL << "\n\n";
 
+	uint64_t clk;
+
     // Initialize variables and ukernel
     std::cout << C_GREEN << "Initializing severals..." << C_NORMAL << std::endl;
+	clk = tx_generator->GetClk();
     tx_generator->Initialize();
-    std::cout << C_GREEN << "Success Initialize" << C_NORMAL << "\n\n";
+	clk = tx_generator->GetClk() - clk;
+    std::cout << C_GREEN << "Success Initialize (" << clk << " cycles)" << C_NORMAL << "\n\n";
 
     // Write operand data and μkernel to physical memory and PIM registers
     std::cout << C_GREEN << "Setting Data..." << C_NORMAL << "\n";
+	clk = tx_generator->GetClk();
     tx_generator->SetData();
-    std::cout << C_GREEN << "Success SetData" << C_NORMAL << "\n\n";
+	clk = tx_generator->GetClk() - clk;
+    std::cout << C_GREEN << "Success SetData (" << clk << " cycles)" << C_NORMAL << "\n\n";
 
     // Execute PIM computation
     std::cout << C_GREEN << "Executing..." << C_NORMAL << "\n";
+    tx_generator->is_print_ = true;
+	clk = tx_generator->GetClk();
+    tx_generator->start_clk_ = clk;
     tx_generator->Execute();
-    std::cout << C_GREEN << "Success Execute" << C_NORMAL << "\n\n";
+	clk = tx_generator->GetClk() - clk;
+    tx_generator->is_print_ = false;
+    std::cout << C_GREEN << "Success Execute (" << clk << " cycles)" << C_NORMAL << "\n\n";
 
     // Read PIM computation result from physical memory
     std::cout << C_GREEN << "Getting Result..." << C_NORMAL << "\n";
+	clk = tx_generator->GetClk();
     tx_generator->GetResult();
-    std::cout << C_GREEN << "Success GetResult" << C_NORMAL << "\n\n";
+	clk = tx_generator->GetClk() - clk;
+    std::cout << C_GREEN << "Success GetResult (" << clk << " cycles)" << C_NORMAL << "\n\n";
 
     // Calculate error between the result of PIM computation and actual answer
     tx_generator->CheckResult();

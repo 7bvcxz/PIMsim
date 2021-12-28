@@ -43,16 +43,40 @@ void TransactionGenerator::TryAddTransaction(uint64_t hex_addr, bool is_write,
     if (is_write) {
         uint8_t *new_data = (uint8_t *) malloc(burstSize_);
         std::memcpy(new_data, DataPtr, burstSize_);
+	    //std::cout << std::hex << clk_ << "\twrite\t" << hex_addr << std::dec << std::endl;
         memory_system_.AddTransaction(hex_addr, is_write, new_data);
+        memory_system_.ClockTick();
+        clk_++;
     } else {
+		//std::cout << std::hex << clk_ << "\tread\t" << hex_addr << std::dec << std::endl;
         memory_system_.AddTransaction(hex_addr, is_write, DataPtr);
+        memory_system_.ClockTick();
+        clk_++;
     }
+
+    #if 0
+    if(is_write)
+	    std::cout << std::hex << cnt_ << "\twrite\t" << hex_addr << std::dec << std::endl;
+    else
+		std::cout << std::hex << cnt_ << "\tread\t" << hex_addr << std::dec << std::endl;
+    cnt_++;
+    #endif
+
+    #if 0
+    if (is_print_) {
+        Address addr = config_->AddressMapping(hex_addr);
+        if(addr.channel == 0 && (addr.bank == 0 || addr.bank == 1))
+            std::cout << clk_-start_clk_ << "\t" << std::hex << hex_addr + 0x5000 << std::dec << std::endl;
+    }
+    #endif
+    
 }
 
 // Prevent turning out of order between transaction parts
 //  Change memory's threshold and wait until all pending transactions are
 //  executed
 void TransactionGenerator::Barrier() {
+    //return;
     memory_system_.SetWriteBufferThreshold(0);
     while (memory_system_.IsPendingTransaction()) {
         memory_system_.ClockTick();
@@ -66,6 +90,7 @@ void AddTransactionGenerator::Initialize() {
     // base address of operands
     addr_x_ = 0;
     addr_y_ = Ceiling(n_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_z_ = addr_y_ + Ceiling(n_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
 
     // total access size of one operand in one ukernel cycle
     ukernel_access_size_ = SIZE_WORD * 8 * NUM_BANK;
@@ -154,8 +179,9 @@ void AddTransactionGenerator::Execute() {
                 uint64_t hex_addr = ReverseAddressMapping(addr);
                 TryAddTransaction(hex_addr, true, data_temp_);
             }
-            Barrier();
+            //Barrier();
 
+            
             #ifdef debug_mode
             std::cout << "\nHOST:\tExecute μkernel 0-9\n";
             #endif
@@ -168,8 +194,8 @@ void AddTransactionGenerator::Execute() {
                     TryAddTransaction(addr_x_ + hex_addr, false, data_temp_);
                 }
             }
-            Barrier();
-
+            //Barrier();
+            
             // Execute ukernel 2-3
             for (int co_i = 0; co_i < 8; co_i++) {
                 uint64_t co = co_o * 8 + co_i;
@@ -179,18 +205,18 @@ void AddTransactionGenerator::Execute() {
                     TryAddTransaction(addr_y_ + hex_addr, false, data_temp_);
                 }
             }
-            Barrier();
-
+            //Barrier();
+            
             // Execute ukernel 4-5
             for (int co_i = 0; co_i < 8; co_i++) {
                 uint64_t co = co_o * 8 + co_i;
                 for (int ch = 0; ch < NUM_CHANNEL; ch++) {
                     Address addr(ch, 0, 0, EVEN_BANK, ro, co);
                     uint64_t hex_addr = ReverseAddressMapping(addr);
-                    TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
+                    TryAddTransaction(addr_z_ + hex_addr, true, data_temp_);
                 }
             }
-            Barrier();
+            //Barrier();
 
             // Execute ukernel 6-7
             for (int co_i = 0; co_i < 8; co_i++) {
@@ -201,8 +227,9 @@ void AddTransactionGenerator::Execute() {
                     TryAddTransaction(addr_x_ + hex_addr, false, data_temp_);
                 }
             }
-            Barrier();
-
+            //Barrier();
+            
+            
             // Execute ukernel 8-9
             for (int co_i = 0; co_i < 8; co_i++) {
                 uint64_t co = co_o * 8 + co_i;
@@ -212,7 +239,8 @@ void AddTransactionGenerator::Execute() {
                     TryAddTransaction(addr_y_ + hex_addr, false, data_temp_);
                 }
             }
-            Barrier();
+            //Barrier();
+            
 
             // Execute ukernel 10-11 + AB-PIM -> AB
             // AB-PIM -> AB occurs automatically at the end of the kernel(EXIT)
@@ -224,12 +252,13 @@ void AddTransactionGenerator::Execute() {
                 for (int ch = 0; ch < NUM_CHANNEL; ch++) {
                     Address addr(ch, 0, 0, ODD_BANK, ro, co);
                     uint64_t hex_addr = ReverseAddressMapping(addr);
-                    TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
+                    TryAddTransaction(addr_z_ + hex_addr, true, data_temp_);
                 }
             }
-            Barrier();
+            //Barrier();
         }
     }
+    Barrier();
 }
 
 // Read PIM computation result from physical memory
@@ -251,14 +280,14 @@ void AddTransactionGenerator::GetResult() {
     std::cout << "\nHOST:\tRead output data z\n";
     #endif
     for (int offset = 0; offset < strided_size ; offset += SIZE_WORD)
-        TryAddTransaction(addr_y_ + offset, false, z_ + offset);
+        TryAddTransaction(addr_z_ + offset, false, z_ + offset);
     Barrier();
 }
 
 // Calculate error between the result of PIM computation and actual answer
 void AddTransactionGenerator::CheckResult() {
     int err = 0;
-    half h_err(0);
+    float h_err = 0.;
     uint8_t *answer = (uint8_t *) malloc(sizeof(uint16_t) * n_);
 
     // Calculate actual answer of GEMV
@@ -329,7 +358,7 @@ void GemvTransactionGenerator::SetData() {
             ((uint16_t*)A_T_)[n * m_ + m] = ((uint16_t*)A_)[m * n_ + n];
         }
     }
-
+    
     #ifdef debug_mode
     std::cout << "HOST:\tSet input data\n";
     #endif
@@ -354,6 +383,7 @@ void GemvTransactionGenerator::SetData() {
 void GemvTransactionGenerator::Execute() {
     ExecuteBank(EVEN_BANK);
     ExecuteBank(ODD_BANK);
+    //Barrier();
 }
 
 // Execute PIM computation of EVEN_BANK or ODD_BANK
@@ -500,20 +530,26 @@ void GemvTransactionGenerator::GetResult() {
 
 // Calculate error between the result of PIM computation and actual answer
 void GemvTransactionGenerator::CheckResult() {
-    half h_err(0);
+    float h_err = 0.;
     uint8_t *answer = (uint8_t *) malloc(sizeof(uint16_t) * m_);
 
-    // Calculate actual answer of GEMV
-    for (int m=0; m< m_; m++) {
-        ((uint16_t*)answer)[m] = 0;
+    for (int m = 0; m < m_; m++) {
         half h_answer(0);
-        for (int n=0; n< n_; n++) {
-            half h_A(*reinterpret_cast<half*>(&((uint16_t*)A_)[m*n_+n]));
-            half h_x(*reinterpret_cast<half*>(&((uint16_t*)x_)[n]));
-            h_answer = fma(h_A, h_x, h_answer);
+        for (int n_grf = 0; n_grf < 8; n_grf++) {
+            half h_answer_one_grf(0);
+			for (int no = 0; no*64+n_grf*8 < n_; no++) {
+			    for (int ni = 0; ni < 8; ni++) {
+				  int n = no * 64 + n_grf * 8 + ni;
+				  half h_A(*reinterpret_cast<half*>(&((uint16_t*)A_)[m*n_+n]));
+				  half h_x(*reinterpret_cast<half*>(&((uint16_t*)x_)[n]));
+				  h_answer_one_grf = fma(h_A, h_x, h_answer_one_grf);
+				}
+            }
+			h_answer = h_answer + h_answer_one_grf;
         }
         ((uint16_t*)answer)[m] = *reinterpret_cast<uint16_t*>(&h_answer);
     }
+    
 
     // Calculate error
     for (int m=0; m< m_; m++) {
@@ -522,6 +558,88 @@ void GemvTransactionGenerator::CheckResult() {
         h_err += fabs(h_answer - h_y);  // fabs stands for float absolute value
     }
     std::cout << "ERROR : " << h_err << std::endl;
+}
+
+////////////////// CPU ////////////////////////
+
+// Initialize variables and ukernel
+void CPUAddTransactionGenerator::Initialize() {
+    // base address of operands
+    addr_x_ = 0;
+    addr_y_ = Ceiling(b_ * n_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_z_ = 2 * addr_y_;
+}
+
+// Execute PIM computation
+void CPUAddTransactionGenerator::Execute() {
+    int cnt = 0;
+    std::cout << UNIT_SIZE << " " << n_ << " " << UNITS_PER_WORD << std::endl;
+    for (int i = 0; i < UNIT_SIZE * b_ * n_; i+= WORD_SIZE) {
+        TryAddTransaction(addr_x_ + i, false, data_temp_);
+        cnt++;
+    }
+    
+    std::cout << cnt << std::endl;
+    cnt = 0;
+    for (int i = 0; i < UNIT_SIZE * b_ * n_; i+= WORD_SIZE) {
+        TryAddTransaction(addr_y_ + i, false, data_temp_);
+        cnt++;
+    }
+    
+    //Barrier();
+    std::cout << cnt << std::endl;
+    cnt = 0;
+    for (int i = 0; i < UNIT_SIZE * b_ * n_; i+= WORD_SIZE) {
+        TryAddTransaction(addr_z_ + i, true, data_temp_);
+        cnt++;
+    }
+    Barrier();
+    std::cout << cnt << std::endl;
+}
+
+
+// Initialize variables and ukernel
+void CPUGemvTransactionGenerator::Initialize() {
+    // TODO(bepo): currently only support m=4096
+
+    addr_A_ = 0;
+    addr_y_ = Ceiling(m_ * n_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_x_ = addr_y_ + Ceiling(b_ * m_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+}
+
+// Execute PIM computation
+void CPUGemvTransactionGenerator::Execute() {
+    for (int b = 0; b < b_; b++) {
+        for (int m = 0; m < m_; m++) {
+            /*
+            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
+                // AddTransaction x (read)
+                // Need to control reuse factor
+                TryAddTransaction(addr_x_ +  n_offset, false, data_temp_);
+            }
+            */
+            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
+                // AddTransaction A (read)
+                TryAddTransaction(addr_A_ + m * n_ * UNIT_SIZE + n_offset, false, data_temp_);
+            }
+        }
+        Barrier();
+        
+        for (int m = 0; m < uint64_t(m_*miss_ratio_); m++) {
+            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
+                // AddTransaction x (read)
+                // Need to control reuse factor
+                TryAddTransaction(addr_x_ +  n_offset, false, data_temp_);
+            }
+            Barrier();
+        }
+        
+        for (int m_offset; m_offset < UNIT_SIZE * m_; m_offset+=WORD_SIZE) {
+            // Addtransaction y (write)
+            TryAddTransaction(addr_y_ + m_offset, true, data_temp_);
+        }
+        Barrier();
+    }
 }
 
 }  // namespace dramsim3

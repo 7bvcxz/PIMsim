@@ -1,8 +1,11 @@
 #ifndef __CONFIG_H_
 #define __CONFIG_H_
 
+#include "./half.hpp"
+using half_float::half;
+
 /////////////////- set unit size - ///////////////////
-typedef uint16_t          unit_t;
+typedef half              unit_t;
 //#define debug_mode
 #define watch_pimindex    1
 //////////////////////////////////////////////////////

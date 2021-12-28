@@ -105,9 +105,11 @@ int main(int argc, const char **argv) {
 
     // Execute PIM computation
     std::cout << C_GREEN << "Executing..." << C_NORMAL << "\n";
+    tx_generator->is_print_ = true;
     clk = tx_generator->GetClk();
     tx_generator->Execute();
     clk = tx_generator->GetClk() - clk;
+    tx_generator->is_print_ = false;
     std::cout << C_GREEN << "Success Execute (" << clk << " cycles)" << C_NORMAL << "\n\n";
 
     // Read PIM computation result from physical memory

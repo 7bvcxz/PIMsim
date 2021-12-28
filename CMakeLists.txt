@@ -124,6 +124,16 @@ set_target_properties(pimdramsim3main PROPERTIES
     CXX_EXTENSIONS NO
 )
 
+# CPU TEST
+add_executable(cpudramsim3main src/main_cpu.cc src/transaction_generator.cc)
+target_link_libraries(cpudramsim3main PRIVATE dramsim3 args)
+target_compile_options(cpudramsim3main PRIVATE)
+set_target_properties(cpudramsim3main PROPERTIES
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+)
+
 # We have to use this custome command because there's a bug in cmake
 # that if you do `make test` it doesn't build your updated test files
 # so we're stucking with `make dramsim3test` for now

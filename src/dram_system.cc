@@ -152,23 +152,42 @@ bool JedecDRAMSystem::WillAcceptTransaction(uint64_t hex_addr,
 
 bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write,
                                      uint8_t *DataPtr) {
+    #if 0
+	if(is_write)
+	    std::cout << std::hex << clk_ << "\twrite\t" << hex_addr << std::dec << std::endl;
+	else
+	    std::cout << std::hex << clk_ << "\tread\t" << hex_addr << std::dec << std::endl;
+    #endif
+
 // Record trace - Record address trace for debugging or other purposes
 #ifdef ADDR_TRACE
     address_trace_ << std::hex << hex_addr << std::dec << " "
                    << (is_write ? "WRITE " : "READ ") << clk_ << std::endl;
 #endif
 
+
     int channel = GetChannel(hex_addr);
     bool ok = ctrls_[channel]->WillAcceptTransaction(hex_addr, is_write);
+
 
     assert(ok);
     if (ok) {
         Transaction trans = Transaction(hex_addr, is_write, DataPtr);
+		Address addr = config_.AddressMapping(hex_addr);
         // Send transaction to PIM Functional Simulator
         //  Performs physical memory RD/WR, bank mode change, set PIM register,
         //  execute PIM computation and write result to physical memory
+        //if(addr.channel == 0 && (addr.bank == 0 && addr.bank == 1))
+        //    std::cout << clk_ << "\t" << std::hex << hex_addr + 0x5000 << std::dec << std::endl; // << " " << is_write << " to PFSim\tch: " << addr.channel << "\tba: " << (addr.bankgroup * 4 + addr.bank) << "\tco: " << addr.column << "\tro: " << addr.row << std::endl;
         pim_func_sim_->AddTransaction(&trans);
 
+        #if 0
+		if(is_write)
+		    std::cout << std::hex << clk_ << "\twrite\t" << hex_addr << std::dec << std::endl;
+		else
+		    std::cout << std::hex << clk_ << "\tread\t" << hex_addr << std::dec << std::endl;
+        #endif
+        
         // Send transaction to proper channel's controller
         //  returns transaction's complete/execution cycle considering memory
         //  timing information

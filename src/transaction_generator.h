@@ -61,6 +61,10 @@ class TransactionGenerator {
         data_temp_ = (uint8_t *) malloc(burstSize_);
 
         memory_system_.init(pmemAddr_, pmemAddr_size_, burstSize_);
+
+        is_print_ = false;
+        start_clk_ = 0;
+        cnt_ = 0;
     }
     ~TransactionGenerator() { delete(config_); }
     // virtual void ClockTick() = 0;
@@ -77,6 +81,11 @@ class TransactionGenerator {
     uint64_t Ceiling(uint64_t num, uint64_t stride);
     void TryAddTransaction(uint64_t hex_addr, bool is_write, uint8_t *DataPtr);
     void Barrier();
+	uint64_t GetClk() { return clk_; }
+
+    bool is_print_;
+    uint64_t start_clk_;
+    int cnt_;
 
  protected:
     MemorySystem memory_system_;
@@ -108,7 +117,7 @@ class AddTransactionGenerator : public TransactionGenerator {
  private:
     uint8_t *x_, *y_, *z_;
     uint64_t n_;
-    uint64_t addr_x_, addr_y_;
+    uint64_t addr_x_, addr_y_, addr_z_;
     uint64_t ukernel_access_size_;
     uint64_t ukernel_count_per_pim_;
     uint32_t *ukernel_;
@@ -143,6 +152,52 @@ class GemvTransactionGenerator : public TransactionGenerator {
     uint64_t ukernel_count_per_pim_;
     uint32_t *ukernel_gemv_;
     uint32_t *ukernel_reduce_;
+};
+
+class CPUAddTransactionGenerator : public TransactionGenerator {
+ public:
+    CPUAddTransactionGenerator(const std::string& config_file,
+                            const std::string& output_dir,
+                            uint64_t b,
+                            uint64_t n)
+        : TransactionGenerator(config_file, output_dir),
+          b_(b), n_(n) {}
+    void Initialize() override;
+    void SetData() override {};
+    void Execute() override;
+    void GetResult() override {};
+    void CheckResult() override {};
+
+ private:
+    uint64_t b_;
+    uint64_t n_;
+    uint64_t addr_x_, addr_y_, addr_z_;
+};
+
+
+class CPUGemvTransactionGenerator : public TransactionGenerator {
+ public:
+    CPUGemvTransactionGenerator(const std::string& config_file,
+                             const std::string& output_dir,
+                             uint64_t b,
+                             uint64_t m,
+                             uint64_t n,
+                             double miss_ratio)
+        : TransactionGenerator(config_file, output_dir),
+          b_(b), m_(m), n_(n), miss_ratio_(miss_ratio) {}
+    void Initialize() override;
+    void SetData() override {};
+    void Execute() override;
+    void GetResult() override {};
+    void CheckResult() override {};
+
+ private:
+    void ExecuteBank(int bank, int batch);
+
+    uint64_t b_;
+    uint64_t m_, n_;
+    double miss_ratio_;
+    uint64_t addr_A_, addr_y_, addr_x_;
 };
 
 }  // namespace dramsim3

@@ -165,6 +165,7 @@ bool Controller::AddTransaction(Transaction trans) {
     last_trans_clk_ = clk_;
 
     if (trans.is_write) {
+		//std::cout << std::hex << clk_ << "\twrite\t" << trans.addr << std::dec << std::endl;
         if (pending_wr_q_.count(trans.addr) == 0) {  // can not merge writes
             pending_wr_q_.insert(std::make_pair(trans.addr, trans));
             if (is_unified_queue_) {
@@ -177,8 +178,9 @@ bool Controller::AddTransaction(Transaction trans) {
         return_queue_.push_back(trans);
         return true;
     } else {  // read
+        //std::cout << std::hex << clk_ << "\tread\t" << trans.addr << std::dec << std::endl;
         // if in write buffer, use the write buffer value
-        if (pending_wr_q_.count(trans.addr) > 0) {
+		if (pending_wr_q_.count(trans.addr) > 0) {
             trans.complete_cycle = clk_ + 1;
             return_queue_.push_back(trans);
             return true;
@@ -248,6 +250,7 @@ void Controller::IssueCommand(const Command &cmd) {
         // if there are multiple reads pending return them all
         while (num_reads > 0) {
             auto it = pending_rd_q_.find(cmd.hex_addr);
+		    //std::cout << std::hex << clk_ << "\tread\t" << cmd.hex_addr << std::dec << std::endl;
             it->second.complete_cycle = clk_ + config_.read_delay;
             return_queue_.push_back(it->second);
             pending_rd_q_.erase(it);
@@ -262,6 +265,7 @@ void Controller::IssueCommand(const Command &cmd) {
         }
         auto wr_lat = clk_ - it->second.added_cycle + config_.write_delay;
         simple_stats_.AddValue("write_latency", wr_lat);     // write cmd latency(cycles) ,,, no touch
+		//std::cout << std::hex << clk_ << "\twrite\t" << cmd.hex_addr << std::dec << std::endl;
         pending_wr_q_.erase(it);
     }
     // must update stats before states (for row hits)

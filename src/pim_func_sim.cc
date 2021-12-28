@@ -30,7 +30,7 @@ void PimFuncSim::init(uint8_t* pmemAddr_, uint64_t pmemAddr_size_,
     std::cout << "pim_units initialized!\n";
 }
 
-// Map 64-bit hex_address into structured address
+// Map structured address into 64-bit hex_address
 uint64_t PimFuncSim::ReverseAddressMapping(Address& addr) {
     uint64_t hex_addr = 0;
     hex_addr += (uint64_t)addr.channel << config_.ch_pos;
