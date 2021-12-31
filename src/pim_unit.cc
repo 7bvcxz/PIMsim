@@ -75,26 +75,37 @@ void PimUnit::PrintPIM_IST(PimInstruction inst) {
         std::cout << (int)inst.imm1 << "\t";
     } else if (inst.pim_op_type == (PIM_OP_TYPE)1) {  // DATA
         PrintOperand((int)inst.dst);
-        if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << inst.dst_idx;
-        else std::cout << "(A)";
-        std::cout << "   \t";
+        if ((int)inst.dst != 0) {
+            if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << "[" << inst.dst_idx << "]";
+            else std::cout << "(A)";
+        }
+        std::cout << "  ";
+
         PrintOperand((int)inst.src0);
-        if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << inst.src0_idx;
-        else std::cout << "(A)";
-        std::cout << "   \t";
+        if ((int)inst.src0 != 0) {
+            if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << "[" << inst.src0_idx << "]";
+            else std::cout << "(A)";
+        }
+        std::cout << "  ";
     } else if(inst.pim_op_type == (PIM_OP_TYPE)2) {  // ALU
         PrintOperand((int)inst.dst);
-        if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << inst.dst_idx;
-        else std::cout << "(A)";
-        std::cout << "   \t";
+        if ((int)inst.dst != 0) {
+            if (inst.is_aam == 0 || inst.is_dst_fix)  std::cout << "[" << inst.dst_idx << "]";
+            else std::cout << "(A)";
+        }
+        std::cout << "  ";
         PrintOperand((int)inst.src0);
-        if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << inst.src0_idx;
-        else std::cout << "(A)";
-        std::cout << "   \t";
+        if ((int)inst.src0 != 0) {
+            if (inst.is_aam == 0 || inst.is_src0_fix)  std::cout << "[" << inst.src0_idx << "]";
+            else std::cout << "(A)";
+        }
+        std::cout << "  ";
         PrintOperand((int)inst.src1);
-        if (inst.is_aam == 0 || inst.is_src1_fix)  std::cout << inst.src1_idx;
-        else std::cout << "(A)";
-        std::cout << "   \t";
+        if ((int)inst.src1 != 0) {
+            if (inst.is_aam == 0 || inst.is_src1_fix)  std::cout << "[" << inst.src1_idx << "]";
+            else std::cout << "(A)";
+        }
+        std::cout << "  ";
     }
     std::cout << "\n";
 }
@@ -448,6 +459,8 @@ void PimUnit::_MAC() {
             half h_src0(*reinterpret_cast<half*>(&src0[i]));
             half h_src1(*reinterpret_cast<half*>(&src1[0]));
             h_dst = fma(h_src0, h_src1, h_dst);
+            //std::cout << h_dst << " " << h_src0 << " " << h_src1 << std::endl;
+            //std::cout << "(MAC) GRF_B[0]: " << (int)GRF_B_[0] << std::endl;
             dst[i] = *reinterpret_cast<unit_t*>(&h_dst);
         }
     } else {
@@ -465,7 +478,9 @@ void PimUnit::_MAD() {
 }
 
 void PimUnit::_MOV() {
+    //std::cout << "(MOV) GRF_B[0]: " << (int)GRF_B_[0] << std::endl;
     for (int i = 0; i < UNITS_PER_WORD; i++) {
+        //std::cout << i << ": " << dst[i] << " " << src0[i] << std::endl;
         dst[i] = src0[i];
     }
 }

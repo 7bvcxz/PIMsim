@@ -41,6 +41,18 @@ int main(int argc, const char **argv) {
     args::ValueFlag<uint64_t> gemv_n_arg(
         parser, "gemv_n", "[GEMV] Number of columns of the matrix A",
         {"gemv-n"}, 4096);
+    args::ValueFlag<uint64_t> bn_l_arg(
+        parser, "bn_l", "[BatchNorm] Number of channels of the matrix A",
+        {"bn-l"}, 64);
+    args::ValueFlag<uint64_t> bn_f_arg(
+        parser, "bn_f", "[BatchNorm] Height of the matrix A",
+        {"bn-f"}, 512);
+    args::ValueFlag<uint64_t> lstm_if_arg(
+        parser, "lstm-if", "[LSTM] Number of input features",
+        {"lstm-if"}, 1024);
+    args::ValueFlag<uint64_t> lstm_of_arg(
+        parser, "lstm-of", "[LSTM] Number of output features",
+        {"lstm-of"}, 1024);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -135,6 +147,75 @@ int main(int argc, const char **argv) {
         // Define Transaction generator for GEMV computation
         tx_generator = new GemvTransactionGenerator(config_file, output_dir,
                                                     m, n, A, x, y);
+    } else if (pim_api == "bn") {
+        uint64_t l = args::get(bn_l_arg);
+        uint64_t f = args::get(bn_f_arg);
+
+        // Define input matrix A, vector x
+        uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * l);
+        uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * l);
+        // Duplicated vector y, z --> dy, dz
+        uint8_t *dy = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
+        uint8_t *dz = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
+        // Define output vector w
+        uint8_t *w = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
+
+        // Fill input operands with random value
+        for (int li=0; li<l; li++) {
+            half h_y = half(f32rng());
+            half h_z = half(f32rng());
+            ((uint16_t*)y)[li] = *reinterpret_cast<uint16_t*>(&h_y);
+            ((uint16_t*)z)[li] = *reinterpret_cast<uint16_t*>(&h_z);
+            for (int fi=0; fi<f; fi++) {
+                ((uint16_t*)dy)[li*f + fi] = *reinterpret_cast<uint16_t*>(&h_y);
+                ((uint16_t*)dz)[li*f + fi] = *reinterpret_cast<uint16_t*>(&h_z);
+                half h_x = half(f32rng());
+                ((uint16_t*)x)[li*f + fi] = *reinterpret_cast<uint16_t*>(&h_x);
+            }
+        }
+        // Define Transaction generator for GEMV computation
+        tx_generator = new BatchNormTransactionGenerator(config_file, output_dir,
+                                                         l, f, x, dy, dz, w);
+    } else if (pim_api == "lstm") {
+        uint64_t i_f = args::get(lstm_if_arg);
+        uint64_t o_f = args::get(lstm_of_arg);
+
+        // Define input matrix W, vector x, h, b
+        uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * i_f);
+        uint8_t *h = (uint8_t *) malloc(sizeof(uint16_t) * i_f);
+        uint8_t *b = (uint8_t *) malloc(sizeof(uint16_t) * o_f * 4);
+        uint8_t *Wx = (uint8_t *) malloc(sizeof(uint16_t) * i_f * o_f * 4);
+        uint8_t *Wh = (uint8_t *) malloc(sizeof(uint16_t) * i_f * o_f * 4);
+        // Define output vector y
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * o_f * 4);
+
+        // Fill input operands with random value
+        for (int i_fi=0; i_fi<i_f; i_fi++) {
+            half h_x = half(f32rng());
+            half h_h = half(f32rng());
+            ((uint16_t*)x)[i_fi] = *reinterpret_cast<uint16_t*>(&h_x);
+            ((uint16_t*)h)[i_fi] = *reinterpret_cast<uint16_t*>(&h_h);
+        }
+        for (int o_fi=0; o_fi<o_f*4; o_fi++) {
+            half h_b = half(0);
+            //half h_b = half(f32rng());
+            ((uint16_t*)b)[o_fi] = *reinterpret_cast<uint16_t*>(&h_b);
+        }
+        
+        for (int o_fi=0; o_fi<o_f*4; o_fi++) {
+            for (int i_fi=0; i_fi<i_f; i_fi++) {
+                half h_wx = half(f32rng());
+                half h_wh = half(f32rng());
+                ((uint16_t*)Wx)[i_f*o_fi + i_fi] = *reinterpret_cast<uint16_t*>(&h_wx);
+                ((uint16_t*)Wh)[i_f*o_fi + i_fi] = *reinterpret_cast<uint16_t*>(&h_wh);
+            }
+        }
+
+        // Define Transaction generator for GEMV computation
+        tx_generator = new LstmTransactionGenerator(config_file, output_dir,
+                                                    i_f, o_f, x, y, h, b, Wx, Wh);
+                           
     }
     std::cout << C_GREEN << "Success Module Initialize" << C_NORMAL << "\n\n";
 
