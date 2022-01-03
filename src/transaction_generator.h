@@ -289,60 +289,45 @@ class CPUBatchNormTransactionGenerator : public TransactionGenerator {
  public:
     CPUBatchNormTransactionGenerator(const std::string& config_file,
                                   const std::string& output_dir,
+                                  uint64_t b,
                                   uint64_t l,
                                   uint64_t f,
-                                  uint8_t *x,
-                                  uint8_t *y,
-                                  uint8_t *z,
-                                  uint8_t *w)
+                                  double miss_ratio)
         : TransactionGenerator(config_file, output_dir),
-          l_(l), f_(f), x_(x), y_(y), z_(z), w_(w) {}
+          b_(b), l_(l), f_(f), miss_ratio_(miss_ratio) {}
     void Initialize() override;
-    void SetData() override;
+    void SetData() override {};
     void Execute() override;
-    void GetResult() override;
-    void CheckResult() override;
+    void GetResult() override {};
+    void CheckResult() override {};
 
  private:
-    uint8_t *x_, *y_, *z_, *w_;
-    uint64_t l_, f_;
+    uint64_t b_, l_, f_;
     uint64_t addr_x_, addr_y_, addr_z_, addr_w_;
-    uint64_t ukernel_access_size_;
-    uint64_t ukernel_count_per_pim_;
-    uint32_t *ukernel_bn_;
+    double miss_ratio_;
 };
 
 class CPULstmTransactionGenerator : public TransactionGenerator {
  public:
     CPULstmTransactionGenerator(const std::string& config_file,
                                  const std::string& output_dir,
+                                 uint64_t b,
                                  uint64_t i_f,
                                  uint64_t o_f,
-                                 uint8_t *x,
-                                 uint8_t *y,
-                                 uint8_t *h,
-                                 uint8_t *b,
-                                 uint8_t *Wx,
-                                 uint8_t *Wh)
+                                 double miss_ratio)
         : TransactionGenerator(config_file, output_dir),
-          i_f_(i_f), o_f_(o_f), x_(x), y_(y), h_(h), b_(b), Wx_(Wx), Wh_(Wh) {}
+          b_(b), i_f_(i_f), o_f_(o_f), miss_ratio_(miss_ratio) {}
     void Initialize() override;
-    void SetData() override;
+    void SetData() override {};
     void Execute() override;
-    void GetResult() override;
-    void CheckResult() override;
+    void GetResult() override {};
+    void CheckResult() override {};
 
  private:
-    void ExecuteBank(int bank, bool calc_h);
-
-    uint8_t *x_, *y_, *h_, *b_, *Wx_, *Wh_;
-    uint8_t *Wx_T_, *Wh_T_;
-    uint64_t i_f_, o_f_;
+    uint64_t b_, i_f_, o_f_;
     uint64_t addr_x_, addr_y_, addr_h_, addr_b_, addr_Wx_, addr_Wh_;
-    uint64_t ukernel_access_size_;
-    uint64_t ukernel_count_per_pim_;
-    uint32_t *ukernel_lstm_, *ukernel_wr_result_;
-};
+    double miss_ratio_;
+    };
 
 }  // namespace dramsim3
 

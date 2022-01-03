@@ -37,7 +37,19 @@ int main(int argc, const char **argv) {
         {"gemv-m"}, 4096);
     args::ValueFlag<uint64_t> gemv_n_arg(
         parser, "gemv_n", "[GEMV] Number of columns of the matrix A",
-        {"gemv-n"}, 4096);
+        {"gemv-n"}, 4096);     
+    args::ValueFlag<uint64_t> bn_l_arg(
+        parser, "bn_l", "[BatchNorm] Sequence length of the matrix A",
+        {"bn-l"}, 64);
+    args::ValueFlag<uint64_t> bn_f_arg(
+        parser, "bn_f", "[BatchNorm] Number of features of the matrix A",
+        {"bn-f"}, 512);
+    args::ValueFlag<uint64_t> lstm_if_arg(
+        parser, "lstm-if", "[LSTM] Number of input features",
+        {"lstm-if"}, 1024);
+    args::ValueFlag<uint64_t> lstm_of_arg(
+        parser, "lstm-of", "[LSTM] Number of output features",
+        {"lstm-of"}, 1024);
     args::ValueFlag<double> miss_ratio_arg(
         parser, "miss_ratio", "Miss ratio",
         {"miss-ratio"}, 1);
@@ -84,6 +96,22 @@ int main(int argc, const char **argv) {
         // Define Transaction generator for GEMV computation
         tx_generator = new CPUGemvTransactionGenerator(config_file, output_dir,
                                                        b, m, n, miss_ratio);
+    } else if (pim_api == "bn") {
+        uint64_t l = args::get(bn_l_arg);
+        uint64_t f = args::get(bn_f_arg);
+        double miss_ratio = args::get(miss_ratio_arg);
+
+        // Define Transaction generator for GEMV computation
+        tx_generator = new CPUBatchNormTransactionGenerator(config_file, output_dir,
+                                                            b, l, f, miss_ratio);
+    } else if (pim_api == "lstm") {
+        uint64_t i_f = args::get(lstm_if_arg);
+        uint64_t o_f = args::get(lstm_of_arg);
+        double miss_ratio = args::get(miss_ratio_arg);
+
+        // Define Transaction generator for GEMV computation
+        tx_generator = new CPULstmTransactionGenerator(config_file, output_dir,
+                                                       b, i_f, o_f, miss_ratio);
     }
     std::cout << C_GREEN << "Success Module Initialize" << C_NORMAL << "\n\n";
 

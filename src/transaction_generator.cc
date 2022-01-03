@@ -816,6 +816,7 @@ void BatchNormTransactionGenerator::SetData() {
     for (int offset = 0; offset < strided_size; offset += SIZE_WORD) {
         TryAddTransaction(addr_z_ + offset, true, z_ + offset);
     }
+    Barrier();
 
     // Mode transition: SB -> AB
     #ifdef debug_mode
@@ -863,7 +864,7 @@ void BatchNormTransactionGenerator::Execute() {
                 uint64_t hex_addr = ReverseAddressMapping(addr);
                 TryAddTransaction(hex_addr, true, data_temp_);
             }
-            //Barrier();
+            Barrier();
             
             #ifdef debug_mode
             std::cout << "\nHOST:\tExecute μkernel 0-15\n";
@@ -877,7 +878,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_x_ + hex_addr, false, data_temp_);
                 }
             }
-            //Barrier();
+            Barrier();
             
             // Execute ukernel 2-3
             for (int co_i = 0; co_i < 8; co_i++) {
@@ -888,7 +889,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_y_ + hex_addr, false, data_temp_);
                 }
             }
-            //Barrier();
+            Barrier();
             
             // Execute ukernel 4-5
             for (int co_i = 0; co_i < 8; co_i++) {
@@ -899,7 +900,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_z_ + hex_addr, false, data_temp_);
                 }
             }
-            //Barrier();
+            Barrier();
 
             // Execute ukernel 6-7
             for (int co_i = 0; co_i < 8; co_i++) {
@@ -910,7 +911,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_w_ + hex_addr, true, data_temp_);
                 }
             }
-            //Barrier();
+            Barrier();
 
             // Execute ukernel 8-9
             for (int co_i = 0; co_i < 8; co_i++) {
@@ -921,7 +922,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_x_ + hex_addr, false, data_temp_);
                 }
             }
-            //Barrier();
+            Barrier();
         
             // Execute ukernel 10-11
             for (int co_i = 0; co_i < 8; co_i++) {
@@ -932,7 +933,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_y_ + hex_addr, false, data_temp_);
                 }
             }
-            //Barrier();
+            Barrier();
 
             // Execute ukernel 12-13
             for (int co_i = 0; co_i < 8; co_i++) {
@@ -943,7 +944,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_z_ + hex_addr, false, data_temp_);
                 }
             }
-            //Barrier();  
+            Barrier();  
 
             // Execute ukernel 14-15 + AB-PIM -> AB
             // AB-PIM -> AB occurs automatically at the end of the kernel(EXIT)
@@ -955,7 +956,7 @@ void BatchNormTransactionGenerator::Execute() {
                     TryAddTransaction(addr_w_ + hex_addr, true, data_temp_);
                 }
             }
-            //Barrier();
+            Barrier();
         }
     }
     Barrier();
@@ -1075,7 +1076,6 @@ void LstmTransactionGenerator::SetData() {
         TryAddTransaction(addr_Wx_ + offset, true, Wx_T_ + offset);
         TryAddTransaction(addr_Wh_ + offset, true, Wh_T_ + offset);
     }
-    Barrier();
 
     // Write input data b
     for (int offset = 0; offset < strided_size_b; offset += SIZE_WORD) {
@@ -1214,6 +1214,7 @@ void LstmTransactionGenerator::ExecuteBank(int bank, bool calc_h) {
             uint64_t hex_addr = ReverseAddressMapping(addr);
             TryAddTransaction(addr_b_ + hex_addr, false, data_temp_);
         }
+        Barrier();
 
         for (int ch = 0; ch < NUM_CHANNEL; ch++) {
             Address addr(ch, 0, 0, bank, 0, 0);
@@ -1358,13 +1359,6 @@ void CPUGemvTransactionGenerator::Initialize() {
 void CPUGemvTransactionGenerator::Execute() {
     for (int b = 0; b < b_; b++) {
         for (int m = 0; m < m_; m++) {
-            /*
-            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
-                // AddTransaction x (read)
-                // Need to control reuse factor
-                TryAddTransaction(addr_x_ +  n_offset, false, data_temp_);
-            }
-            */
             for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
                 // AddTransaction A (read)
                 TryAddTransaction(addr_A_ + m * n_ * UNIT_SIZE + n_offset, false, data_temp_);
@@ -1388,10 +1382,10 @@ void CPUGemvTransactionGenerator::Execute() {
         Barrier();
     }
 }
-/*
+
+
 // Initialize variables and ukernel
 void CPUBatchNormTransactionGenerator::Initialize() {
-    // TODO(bepo): currently only support m=4096
     addr_x_ = 0;
     addr_w_ = Ceiling(l_ * f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
     addr_y_ = addr_w_ + Ceiling(l_ * f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
@@ -1401,26 +1395,37 @@ void CPUBatchNormTransactionGenerator::Initialize() {
 // Execute PIM computation
 void CPUBatchNormTransactionGenerator::Execute() {
     for (int b = 0; b < b_; b++) {
-        for (int m = 0; m < m_; m++) {
-            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
-                // AddTransaction A (read)
-                TryAddTransaction(addr_A_ + m * n_ * UNIT_SIZE + n_offset, false, data_temp_);
+        for (int li = 0; li < l_; li++) {
+            for (int f_offset = 0; f_offset < UNIT_SIZE * f_; f_offset+=WORD_SIZE) {
+                // AddTransaction x (read)
+                TryAddTransaction(addr_x_ + f_ * li * UNIT_SIZE + f_offset, false, data_temp_);
             }
         }
         Barrier();
         
-        for (int m = 0; m < uint64_t(m_*miss_ratio_); m++) {
-            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
-                // AddTransaction x (read)
+        for (int li = 0; li < uint64_t(l_*miss_ratio_); li++) {
+            for (int f_offset = 0; f_offset < UNIT_SIZE * f_; f_offset+=WORD_SIZE) {
+                // AddTransaction y (read)
                 // Need to control reuse factor
-                TryAddTransaction(addr_x_ +  n_offset, false, data_temp_);
+                TryAddTransaction(addr_y_ + f_offset, false, data_temp_);
             }
             Barrier();
         }
         
-        for (int m_offset; m_offset < UNIT_SIZE * m_; m_offset+=WORD_SIZE) {
-            // Addtransaction y (write)
-            TryAddTransaction(addr_y_ + m_offset, true, data_temp_);
+        for (int li = 0; li < uint64_t(l_*miss_ratio_); li++) {
+            for (int f_offset = 0; f_offset < UNIT_SIZE * f_; f_offset+=WORD_SIZE) {
+                // AddTransaction z (read)
+                // Need to control reuse factor
+                TryAddTransaction(addr_z_ + f_offset, false, data_temp_);
+            }
+            Barrier();
+        }
+
+        for (int li = 0; li < l_; li++) {
+            for (int f_offset = 0; f_offset < UNIT_SIZE * f_; f_offset+=WORD_SIZE) {
+                // AddTransaction w (write)
+                TryAddTransaction(addr_w_ + f_ * li * UNIT_SIZE + f_offset, false, data_temp_);
+            }
         }
         Barrier();
     }
@@ -1429,40 +1434,47 @@ void CPUBatchNormTransactionGenerator::Execute() {
 
 // Initialize variables and ukernel
 void CPULstmTransactionGenerator::Initialize() {
-    // TODO(bepo): currently only support m=4096
-    addr_A_ = 0;
-    addr_y_ = Ceiling(m_ * n_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
-    addr_x_ = addr_y_ + Ceiling(b_ * m_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_x_ = 0;
+    addr_y_ = Ceiling(i_f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_h_ = addr_y_ + Ceiling(o_f_ * 4 * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_b_ = addr_h_ + Ceiling(i_f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_Wx_ = addr_b_ + Ceiling(o_f_ * 4 * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_Wh_ = addr_Wx_ + Ceiling(i_f_ * o_f_ * 4 * UNIT_SIZE, SIZE_ROW * NUM_BANK);
 }
 
 // Execute PIM computation
 void CPULstmTransactionGenerator::Execute() {
     for (int b = 0; b < b_; b++) {
-        for (int m = 0; m < m_; m++) {
-
-            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
-                // AddTransaction A (read)
-                TryAddTransaction(addr_A_ + m * n_ * UNIT_SIZE + n_offset, false, data_temp_);
+        for (int i_fi = 0; i_fi < i_f_; i_fi++) {
+            for (int o_f_offset = 0; o_f_offset < UNIT_SIZE * o_f_; o_f_offset+=WORD_SIZE) {
+                // AddTransaction Wx, Wh (read)
+                TryAddTransaction(addr_Wx_ +  o_f_ * i_fi * UNIT_SIZE + o_f_offset, false, data_temp_);
+                TryAddTransaction(addr_Wh_ +  o_f_ * i_fi * UNIT_SIZE + o_f_offset, false, data_temp_);
             }
         }
+
+        for (int o_f_offset = 0; o_f_offset < UNIT_SIZE * o_f_; o_f_offset+=WORD_SIZE) {
+            // AddTransaction A (read)
+            TryAddTransaction(addr_b_ + o_f_offset, false, data_temp_);
+        }
         Barrier();
-        
-        for (int m = 0; m < uint64_t(m_*miss_ratio_); m++) {
-            for (int n_offset = 0; n_offset < UNIT_SIZE * n_; n_offset+=WORD_SIZE) {
-                // AddTransaction x (read)
+
+        for (int i_fi = 0; i_fi < uint64_t(i_f_*miss_ratio_); i_fi++) {
+            for (int o_f_offset = 0; o_f_offset < UNIT_SIZE * o_f_; o_f_offset+=WORD_SIZE) {
+                // AddTransaction x, h (read)
                 // Need to control reuse factor
-                TryAddTransaction(addr_x_ +  n_offset, false, data_temp_);
+                TryAddTransaction(addr_x_ + o_f_offset, false, data_temp_);
+                TryAddTransaction(addr_h_ + o_f_offset, false, data_temp_);
             }
             Barrier();
         }
         
-        for (int m_offset; m_offset < UNIT_SIZE * m_; m_offset+=WORD_SIZE) {
-            // Addtransaction y (write)
-            TryAddTransaction(addr_y_ + m_offset, true, data_temp_);
+        for (int o_f_offset = 0; o_f_offset < UNIT_SIZE * o_f_; o_f_offset+=WORD_SIZE) {
+            // AddTransaction y (write)
+            TryAddTransaction(addr_y_ + o_f_offset, true, data_temp_);
         }
         Barrier();
     }
 }
-*/
 
 }  // namespace dramsim3
