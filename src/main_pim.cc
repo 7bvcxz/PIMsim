@@ -151,13 +151,10 @@ int main(int argc, const char **argv) {
         uint64_t l = args::get(bn_l_arg);
         uint64_t f = args::get(bn_f_arg);
 
-        // Define input matrix A, vector x
+        // Define input x, weight y, z
         uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
-        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * l);
-        uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * l);
-        // Duplicated vector y, z --> dy, dz
-        uint8_t *dy = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
-        uint8_t *dz = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * f);
+        uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * f);
         // Define output vector w
         uint8_t *w = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
 
@@ -168,15 +165,13 @@ int main(int argc, const char **argv) {
             ((uint16_t*)y)[li] = *reinterpret_cast<uint16_t*>(&h_y);
             ((uint16_t*)z)[li] = *reinterpret_cast<uint16_t*>(&h_z);
             for (int fi=0; fi<f; fi++) {
-                ((uint16_t*)dy)[li*f + fi] = *reinterpret_cast<uint16_t*>(&h_y);
-                ((uint16_t*)dz)[li*f + fi] = *reinterpret_cast<uint16_t*>(&h_z);
                 half h_x = half(f32rng());
                 ((uint16_t*)x)[li*f + fi] = *reinterpret_cast<uint16_t*>(&h_x);
             }
         }
         // Define Transaction generator for GEMV computation
         tx_generator = new BatchNormTransactionGenerator(config_file, output_dir,
-                                                         l, f, x, dy, dz, w);
+                                                         l, f, x, y, z, w);
     } else if (pim_api == "lstm") {
         uint64_t i_f = args::get(lstm_if_arg);
         uint64_t o_f = args::get(lstm_of_arg);

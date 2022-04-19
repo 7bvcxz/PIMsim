@@ -549,7 +549,7 @@ void GemvTransactionGenerator::Initialize() {
     // Define ukernel for gemv
     ukernel_gemv_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
     for (int i=0; i< 32; i++)
-        ukernel_gemv_[i] = 0b00000000000000000000000000000000; // initialize
+        ukernel_gemv_[i] = 0b00000000000000000000000000000001; // initialize
 
     ukernel_gemv_[0] = 0b10100100001000001000100000000000; // MAC(AAM)   GRF_B[0]  BANK  SRF_M
     ukernel_gemv_[1] = 0b00010000000001000000100000000111; // JUMP       -1        7
@@ -1403,6 +1403,15 @@ void CPUBatchNormTransactionGenerator::Execute() {
         }
         Barrier();
         
+        // 1 : cold miss, 0 : can reuse at first
+        #if 1
+        for (int f_offset = 0; f_offset < UNIT_SIZE * f_; f_offset+=WORD_SIZE) {
+            // AddTransaction y (read)
+            // Need to control reuse factor
+            TryAddTransaction(addr_y_ + f_offset, false, data_temp_);
+        }
+        Barrier();
+        #endif
         for (int li = 0; li < uint64_t(l_*miss_ratio_); li++) {
             for (int f_offset = 0; f_offset < UNIT_SIZE * f_; f_offset+=WORD_SIZE) {
                 // AddTransaction y (read)
@@ -1458,6 +1467,17 @@ void CPULstmTransactionGenerator::Execute() {
             TryAddTransaction(addr_b_ + o_f_offset, false, data_temp_);
         }
         Barrier();
+
+        // >> cold miss <<
+        #if 1
+        for (int o_f_offset = 0; o_f_offset < UNIT_SIZE * o_f_; o_f_offset+=WORD_SIZE) {
+            // AddTransaction x, h (read)
+            // Need to control reuse factor
+            TryAddTransaction(addr_x_ + o_f_offset, false, data_temp_);
+            TryAddTransaction(addr_h_ + o_f_offset, false, data_temp_);
+        }
+        Barrier();
+        #endif
 
         for (int i_fi = 0; i_fi < uint64_t(i_f_*miss_ratio_); i_fi++) {
             for (int o_f_offset = 0; o_f_offset < UNIT_SIZE * o_f_; o_f_offset+=WORD_SIZE) {
