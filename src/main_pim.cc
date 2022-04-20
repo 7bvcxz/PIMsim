@@ -151,20 +151,24 @@ int main(int argc, const char **argv) {
         uint64_t l = args::get(bn_l_arg);
         uint64_t f = args::get(bn_f_arg);
 
+		uint64_t num_duplicate = 4096 / f;
+
         // Define input x, weight y, z
         uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
-        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * f);
-        uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * f);
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * 4096 * 8);
+        uint8_t *z = (uint8_t *) malloc(sizeof(uint16_t) * 4096 * 8);
         // Define output vector w
         uint8_t *w = (uint8_t *) malloc(sizeof(uint16_t) * l * f);
 
         // Fill input operands with random value
-        for (int li=0; li<l; li++) {
+        for (int fi=0; fi<f; fi++) {
             half h_y = half(f32rng());
             half h_z = half(f32rng());
-            ((uint16_t*)y)[li] = *reinterpret_cast<uint16_t*>(&h_y);
-            ((uint16_t*)z)[li] = *reinterpret_cast<uint16_t*>(&h_z);
-            for (int fi=0; fi<f; fi++) {
+			for (int coi=0; coi<num_duplicate*8; coi++) {
+				((uint16_t*)y)[fi + coi*f] = *reinterpret_cast<uint16_t*>(&h_y);
+				((uint16_t*)z)[fi + coi*f] = *reinterpret_cast<uint16_t*>(&h_z);
+			}
+            for (int li=0; li<l; li++) {
                 half h_x = half(f32rng());
                 ((uint16_t*)x)[li*f + fi] = *reinterpret_cast<uint16_t*>(&h_x);
             }

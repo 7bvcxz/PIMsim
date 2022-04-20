@@ -764,7 +764,7 @@ void BatchNormTransactionGenerator::Initialize() {
     addr_x_ = 0;
     addr_w_ = Ceiling(l_ * f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
     addr_y_ = addr_w_ + Ceiling(l_ * f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
-    addr_z_ = addr_y_ + Ceiling(l_ * f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_z_ = addr_y_ + Ceiling(f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
 
     // total access size of one operand in one ukernel cycle
     ukernel_access_size_ = SIZE_WORD * 8 * NUM_BANK;
@@ -776,29 +776,30 @@ void BatchNormTransactionGenerator::Initialize() {
     // Define ukernel
     ukernel_bn_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
 
-    ukernel_bn_[0]  = 0b01000010000000001000000000000000; // MOV(AAM) GRF_A  BANK
-    ukernel_bn_[1]  = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[2]  = 0b10010100000010001000000000000000; // MUL(AAM) GRF_B  BANK  GRF_A
-    ukernel_bn_[3]  = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[4]  = 0b10000010000100001000000000000000; // ADD(AAM) GRF_A  BANK  GRF_B
-    ukernel_bn_[5]  = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[6]  = 0b01000000010000001000000000000000; // MOV(AAM) BANK   GRF_A
-    ukernel_bn_[7]  = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[8]  = 0b01000010000000001000000000000000; // MOV(AAM) GRF_A  BANK
-    ukernel_bn_[9]  = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[10] = 0b10010100000010001000000000000000; // MUL(AAM) GRF_B  BANK  GRF_A
-    ukernel_bn_[11] = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[12] = 0b10000010000100001000000000000000; // ADD(AAM) GRF_A  BANK  GRF_B
-    ukernel_bn_[13] = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[14] = 0b01000000010000001000000000000000; // MOV(AAM) BANK   GRF_A
-    ukernel_bn_[15] = 0b00010000000001000000100000000111; // JUMP     -1     7
-    ukernel_bn_[16] = 0b00100000000000000000000000000000; // EXIT
+	ukernel_bn_[0]  = 0b01000010000000001000000000000000;  // MOV(AAM) GRF_A BANK
+	ukernel_bn_[1]  = 0b00010000000001000000100000000111;  // JUMP -1 7
+	ukernel_bn_[2]  = 0b10010010000010001000000000000000;  // MUL(AAM) GRF_A BANK GRF_A
+	ukernel_bn_[3]  = 0b00010000000001000000100000000111;  // JUMP -1 7
+	ukernel_bn_[4]  = 0b10000010000010001000000000000000;  // ADD(AAM) GRF_A BANK GRF_A
+	ukernel_bn_[5]  = 0b00010000000001000000100000000111;  // JUMP -1 7
+	ukernel_bn_[6]  = 0b01000000010000001000000000000000;  // MOV BANK GRF_A
+	ukernel_bn_[7]  = 0b00010000000001000000100000000111;  // JUMP -1 7
+	ukernel_bn_[8]  = 0b01000010000000001000000000000000;  // MOV(AAM) GRF_A BANK
+	ukernel_bn_[9]  = 0b00010000000001000000100000000111;  // JUMP -1 7
+	ukernel_bn_[10] = 0b10010010000010001000000000000000;  // MUL(AAM) GRF_A BANK GRF_A
+	ukernel_bn_[11] = 0b00010000000001000000100000000111;  // JUMP -1 7
+	ukernel_bn_[12] = 0b10000010000010001000000000000000;  // ADD(AAM) GRF_A BANK GRF_A
+	ukernel_bn_[13] = 0b00010000000001000000100000000111;  // JUMP -1 7 
+	ukernel_bn_[14] = 0b01000000010000001000000000000000;  // MOV BANK GRF_A
+	ukernel_bn_[15] = 0b00010000000001000000100000000111;  // JUMP -1 7
+	ukernel_bn_[16] = 0b00100000000000000000000000000000;  // EXIT
 }
 
 // Write operand data and μkernel to physical memory and PIM registers
 void BatchNormTransactionGenerator::SetData() {
     // strided size of one operand with one computation part(minimum)
     uint64_t strided_size = Ceiling(l_ * f_ * UNIT_SIZE, SIZE_WORD * NUM_BANK);
+    uint64_t strided_size_ = Ceiling(4096 * 8 * UNIT_SIZE, SIZE_WORD * NUM_BANK);
 
     #ifdef debug_mode
     std::cout << "HOST:\tSet input data\n";
@@ -808,12 +809,12 @@ void BatchNormTransactionGenerator::SetData() {
         TryAddTransaction(addr_x_ + offset, true, x_ + offset);
 
     // Write input data y to physical memory
-    for (int offset = 0; offset < strided_size; offset += SIZE_WORD) {
+    for (int offset = 0; offset < strided_size_; offset += SIZE_WORD) {
         TryAddTransaction(addr_y_ + offset, true, y_ + offset);
     }
 
     // Write input data z to physical memory
-    for (int offset = 0; offset < strided_size; offset += SIZE_WORD) {
+    for (int offset = 0; offset < strided_size_; offset += SIZE_WORD) {
         TryAddTransaction(addr_z_ + offset, true, z_ + offset);
     }
     Barrier();
@@ -884,7 +885,7 @@ void BatchNormTransactionGenerator::Execute() {
             for (int co_i = 0; co_i < 8; co_i++) {
                 uint64_t co = co_o * 8 + co_i;
                 for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-                    Address addr(ch, 0, 0, EVEN_BANK, ro, co);
+                    Address addr(ch, 0, 0, EVEN_BANK, ro, co_i);
                     uint64_t hex_addr = ReverseAddressMapping(addr);
                     TryAddTransaction(addr_y_ + hex_addr, false, data_temp_);
                 }
@@ -895,7 +896,8 @@ void BatchNormTransactionGenerator::Execute() {
             for (int co_i = 0; co_i < 8; co_i++) {
                 uint64_t co = co_o * 8 + co_i;
                 for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-                    Address addr(ch, 0, 0, EVEN_BANK, ro, co);
+                    Address addr(ch, 0, 0, EVEN_BANK, ro, co_i);
+					//std::cout << co << " " << co_o << "\n";
                     uint64_t hex_addr = ReverseAddressMapping(addr);
                     TryAddTransaction(addr_z_ + hex_addr, false, data_temp_);
                 }
@@ -928,7 +930,7 @@ void BatchNormTransactionGenerator::Execute() {
             for (int co_i = 0; co_i < 8; co_i++) {
                 uint64_t co = co_o * 8 + co_i;
                 for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-                    Address addr(ch, 0, 0, ODD_BANK, ro, co);
+                    Address addr(ch, 0, 0, ODD_BANK, ro, co_i);
                     uint64_t hex_addr = ReverseAddressMapping(addr);
                     TryAddTransaction(addr_y_ + hex_addr, false, data_temp_);
                 }
@@ -939,7 +941,7 @@ void BatchNormTransactionGenerator::Execute() {
             for (int co_i = 0; co_i < 8; co_i++) {
                 uint64_t co = co_o * 8 + co_i;
                 for (int ch = 0; ch < NUM_CHANNEL; ch++) {
-                    Address addr(ch, 0, 0, ODD_BANK, ro, co);
+                    Address addr(ch, 0, 0, ODD_BANK, ro, co_i);
                     uint64_t hex_addr = ReverseAddressMapping(addr);
                     TryAddTransaction(addr_z_ + hex_addr, false, data_temp_);
                 }
@@ -993,10 +995,10 @@ void BatchNormTransactionGenerator::CheckResult() {
 
     // Calculate actual answer of BN
     for (int li=0; li<l_; li++) {
-        half h_y(*reinterpret_cast<half*>(&((uint16_t*)y_)[li*f_]));
-        half h_z(*reinterpret_cast<half*>(&((uint16_t*)z_)[li*f_]));
         for (int fi=0; fi<f_; fi++) {
             half h_x(*reinterpret_cast<half*>(&((uint16_t*)x_)[f_*li + fi]));
+        	half h_y(*reinterpret_cast<half*>(&((uint16_t*)y_)[fi]));
+        	half h_z(*reinterpret_cast<half*>(&((uint16_t*)z_)[fi]));
             half h_answer = (h_x * h_y) + h_z;
             ((uint16_t*)answer)[f_*li + fi] = *reinterpret_cast<uint16_t*>(&h_answer);
         }
