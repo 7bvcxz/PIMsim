@@ -85,7 +85,8 @@ for line in input_file:
     output_file.write(str(idx))
     output_file.write("]=")
     output_file.write(str(bin(ukernel_code)))
-    output_file.write("\n")
+    output_file.write(";  // ")
+    output_file.write(line)
     idx = idx + 1
      
 

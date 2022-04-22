@@ -27,7 +27,7 @@ int main(int argc, const char **argv) {
     args::Positional<std::string> config_arg(
         parser, "config", "The config file name (mandatory)");
     args::ValueFlag<std::string> pim_api_arg(
-        parser, "pim_api", "PIM API - add, gemv",
+        parser, "pim_api", "PIM API - add, mul, bn, gemv, lstm, lstm_pre",
         {"pim-api"}, "add");
     args::ValueFlag<uint64_t> add_n_arg(
         parser, "add_n", "[ADD] Number of elements in vector x, y and z",
@@ -215,7 +215,43 @@ int main(int argc, const char **argv) {
         tx_generator = new LstmTransactionGenerator(config_file, output_dir,
                                                     i_f, o_f, x, y, h, b, Wx, Wh);
                            
-    }
+    } else if (pim_api == "lstm_pre") {
+        uint64_t i_f = args::get(lstm_if_arg);
+        uint64_t o_f = args::get(lstm_of_arg);
+
+        // Define input matrix W, vector h, b
+        uint8_t *h = (uint8_t *) malloc(sizeof(uint16_t) * i_f);
+        uint8_t *b = (uint8_t *) malloc(sizeof(uint16_t) * o_f * 4);
+        uint8_t *Wh = (uint8_t *) malloc(sizeof(uint16_t) * i_f * o_f * 4);
+        // Define output vector x
+        uint8_t *x = (uint8_t *) malloc(sizeof(uint16_t) * o_f * 4);
+        // Define output vector y
+        uint8_t *y = (uint8_t *) malloc(sizeof(uint16_t) * o_f * 4);
+
+        // Fill input operands with random value
+        for (int i_fi=0; i_fi<i_f; i_fi++) {
+            half h_h = half(f32rng());
+            ((uint16_t*)h)[i_fi] = *reinterpret_cast<uint16_t*>(&h_h);
+        }
+        for (int o_fi=0; o_fi<o_f*4; o_fi++) {
+            //half h_b = half(0);
+            half h_b = half(f32rng());
+            half h_x = half(f32rng());
+            ((uint16_t*)b)[o_fi] = *reinterpret_cast<uint16_t*>(&h_b);
+            ((uint16_t*)x)[o_fi] = *reinterpret_cast<uint16_t*>(&h_x);
+        }
+        
+        for (int o_fi=0; o_fi<o_f*4; o_fi++) {
+            for (int i_fi=0; i_fi<i_f; i_fi++) {
+                half h_wh = half(f32rng());
+                ((uint16_t*)Wh)[i_f*o_fi + i_fi] = *reinterpret_cast<uint16_t*>(&h_wh);
+            }
+        }
+
+        // Define Transaction generator for GEMV computation
+        tx_generator = new LstmPreTransactionGenerator(config_file, output_dir,
+                                                    i_f, o_f, x, y, h, b, Wh);
+	}
     std::cout << C_GREEN << "Success Module Initialize" << C_NORMAL << "\n\n";
 
 	uint64_t clk;

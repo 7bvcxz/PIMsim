@@ -1298,6 +1298,275 @@ void LstmTransactionGenerator::CheckResult() {
     std::cout << "ERROR : " << h_err << std::endl;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// Initialize variables and ukernel
+void LstmPreTransactionGenerator::Initialize() {
+    // TODO(bepo): currently only support m=4096
+    addr_x_ = 0;
+    addr_y_ = Ceiling(o_f_ * 4 * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_h_ = addr_y_ + Ceiling(o_f_ * 4 * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_b_ = addr_h_ + Ceiling(i_f_ * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+    addr_Wh_ = addr_b_ + Ceiling(i_f_ * o_f_ * 4 * UNIT_SIZE, SIZE_ROW * NUM_BANK);
+
+    ukernel_access_size_ = SIZE_WORD * 8 * NUM_BANK;
+    ukernel_count_per_pim_ = Ceiling(i_f_ * o_f_ * 4 * UNIT_SIZE, ukernel_access_size_)
+                                     / ukernel_access_size_;
+
+    // Define ukernel for gemv
+    ukernel_lstm_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
+    for (int i=0; i<32; i++)
+        ukernel_lstm_[i] = 0b00000000000000000000000000000000; // initialize
+
+    ukernel_lstm_[0] = 0b10100100001000001000100000000000; // MAC(AAM)   GRF_B[0]  BANK  SRF_M
+    ukernel_lstm_[1] = 0b00010000000001000000100000000111; // JUMP       -1        7
+    ukernel_lstm_[2] = 0b00100000000000000000000000000000; // EXIT
+
+    // Define ukernel for reducing output data from ukernel_gemv + write to
+    // physical memory
+    ukernel_wr_result_ = (uint32_t *) malloc(sizeof(uint32_t) * 32);
+    for (int i=0; i< 32; i++)
+		ukernel_wr_result_[i] = 0b00000000000000000000000000000000; // initialize
+
+    ukernel_wr_result_[0] = 0b10000010100000000000100010000000; // ADD     GRF_A[0]  GRF_B[0]  BANK
+    ukernel_wr_result_[1] = 0b10000100010000000000000100000000; // ADD     GRF_B[1]  GRF_A[0]  BANK
+    ukernel_wr_result_[2] = 0b01000000100000000000000000010000; // MOV     BANK      GRF_B[1]
+    ukernel_wr_result_[3] = 0b00100000000000000000000000000000; // EXIT
+}
+
+// Write operand data and μkernel to physical memory and PIM registers
+void LstmPreTransactionGenerator::SetData() {
+    uint64_t strided_size_W = Ceiling(i_f_ * o_f_ * 4 * UNIT_SIZE, SIZE_WORD * NUM_BANK);
+    uint64_t strided_size_b = Ceiling(o_f_ * 4 * UNIT_SIZE, SIZE_WORD * NUM_BANK);
+
+    // Transpose input data Wh
+    Wh_T_ = (uint8_t *) malloc(sizeof(uint16_t) * i_f_ * o_f_ * 4);
+    
+    for (int i_fi=0; i_fi<i_f_; i_fi++)
+        for (int o_fi=0; o_fi<o_f_*4; o_fi++)
+            ((uint16_t*)Wh_T_)[o_f_*4*i_fi + o_fi] = ((uint16_t*)Wh_)[i_f_ * o_fi + i_fi];
+    
+    #ifdef debug_mode
+    std::cout << "HOST:\tSet input data\n";
+    #endif
+    ukernel_wr_result_[0] = 0b10000010100000000000100010000000; // ADD     GRF_A[0]  GRF_B[0]  BANK
+    // Write input data Wx, Wh
+    for (int offset = 0; offset < strided_size_W; offset += SIZE_WORD) {
+        TryAddTransaction(addr_Wh_ + offset, true, Wh_T_ + offset);
+    }
+
+    // Write input data b, result data x
+    for (int offset = 0; offset < strided_size_b; offset += SIZE_WORD) {
+        TryAddTransaction(addr_b_ + offset, true, b_ + offset);
+        TryAddTransaction(addr_x_ + offset, true, x_ + offset);
+    }
+    Barrier();
+
+    // Mode transition: SB -> AB
+    #ifdef debug_mode
+    std::cout << "\nHOST:\t[1] SB -> AB \n";
+    #endif
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        Address addr(ch, 0, 0, 0, MAP_ABMR, 0);
+        uint64_t hex_addr = ReverseAddressMapping(addr);
+        TryAddTransaction(hex_addr, false, data_temp_);
+    }
+    Barrier();
+}
+
+// Execute PIM computation
+void LstmPreTransactionGenerator::Execute() {
+    ExecuteBank(EVEN_BANK);
+    ExecuteBank(ODD_BANK);
+    //Barrier();
+}
+
+// Execute PIM computation of EVEN_BANK or ODD_BANK
+void LstmPreTransactionGenerator::ExecuteBank(int bank) {
+    // Program lstm μkernel
+    #ifdef debug_mode
+    std::cout << "HOST:\tProgram lstm μkernel \n";
+    #endif
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        for (int co = 0; co < 4; co++) {
+            Address addr(ch, 0, 0, 0, MAP_CRF, co);
+            uint64_t hex_addr = ReverseAddressMapping(addr);
+            TryAddTransaction(hex_addr, true, (uint8_t*)&ukernel_lstm_[co*8]);
+        }
+    }
+    Barrier();
+
+    // Execute for EVEN_BANK or ODD_BANK
+    for (int ro = 0; ro * NUM_WORD_PER_ROW / 8 < ukernel_count_per_pim_; ro++) {
+        for (int co_o = 0; co_o < NUM_WORD_PER_ROW / 8; co_o++) {
+            #ifdef debug_mode
+            std::cout << "\nHOST:\tSet Srf\n";
+            #endif
+            // SRF_M modify
+            std::memcpy(data_temp_ + 16,
+                        ((uint16_t*)h_) + (ro * NUM_WORD_PER_ROW + co_o * 8),
+                        16);
+            for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+                Address addr(ch, 0, 0, bank, MAP_SRF, 0);
+                uint64_t hex_addr = ReverseAddressMapping(addr);
+                TryAddTransaction(hex_addr, true, data_temp_);
+            }
+            Barrier();
+
+            // Mode transition: AB -> AB-PIM
+            #ifdef debug_mode
+            std::cout << "\nHOST:\t[2] AB -> PIM \n";
+            #endif
+            *data_temp_ |= 1;
+            for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+                Address addr(ch, 0, 0, 0, MAP_PIM_OP_MODE, 0);
+                uint64_t hex_addr = ReverseAddressMapping(addr);
+                TryAddTransaction(hex_addr, true, data_temp_);
+            }
+            Barrier();
+
+            // Execute ukernel 0-1 + AB-PIM -> AB
+            #ifdef debug_mode
+            std::cout << "\nHOST:\tExecute μkernel 0-1 + [3] PIM -> AB \n";
+            #endif
+            for (int co_i = 0; co_i < 8; co_i++) {
+                uint64_t co = co_o * 8 + co_i;
+                for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+                    Address addr(ch, 0, 0, bank, ro, co);
+                    uint64_t hex_addr = ReverseAddressMapping(addr);
+                    TryAddTransaction(addr_Wh_ + hex_addr, false, data_temp_);
+                }
+            }
+            Barrier();
+
+            // for the last gemv ukernel, move result to bank
+            if (ro * NUM_WORD_PER_ROW / 8 + co_o >= ukernel_count_per_pim_)
+                break;
+        }
+    }
+
+    // Program wr_result ukernel
+    #ifdef debug_mode
+    std::cout << "\nHOST:\tProgram wr_result μkernel \n";
+    #endif
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        for (int co = 0; co < 4; co++) {
+            Address addr(ch, 0, 0, 0, MAP_CRF, co);
+            uint64_t hex_addr = ReverseAddressMapping(addr);
+            TryAddTransaction(hex_addr, true, (uint8_t*)&ukernel_wr_result_[co*8]);
+        }
+    }
+    Barrier();
+
+    // Mode transition: AB -> AB-PIM
+    #ifdef debug_mode
+    std::cout << "\nHOST:\t[4] AB -> PIM \n";
+    #endif
+    *data_temp_ |= 1;
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        Address addr(ch, 0, 0, 0, MAP_PIM_OP_MODE, 0);
+        uint64_t hex_addr = ReverseAddressMapping(addr);
+        TryAddTransaction(hex_addr, true, data_temp_);
+    }
+    Barrier();
+
+    // Execute ukernel 0~2 + AB-PIM -> AB
+    #ifdef debug_mode
+    std::cout << "\nHOST:\tExecute μkernel 0-2 + [5] PIM -> AB \n";
+    #endif
+        
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        Address addr(ch, 0, 0, bank, 0, 0);
+        uint64_t hex_addr = ReverseAddressMapping(addr);
+        TryAddTransaction(addr_b_ + hex_addr, false, data_temp_);
+    }
+    Barrier();
+        
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        Address addr(ch, 0, 0, bank, 0, 0);
+        uint64_t hex_addr = ReverseAddressMapping(addr);
+        TryAddTransaction(addr_x_ + hex_addr, false, data_temp_);
+    }
+    Barrier();
+
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        Address addr(ch, 0, 0, bank, 0, 0);
+        uint64_t hex_addr = ReverseAddressMapping(addr);
+        TryAddTransaction(addr_y_ + hex_addr, true, data_temp_);
+    }
+    Barrier();
+
+    // reset GRF_B
+    #ifdef debug_mode
+    std::cout << "\nHOST:\tReset GRF_B\n";
+    #endif
+    uint8_t* zero = (uint8_t*)malloc(WORD_SIZE);
+    for (int i=0; i< WORD_SIZE; i++) zero[i] = 0;
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        for (int co = 8; co < 16; co++) {
+            Address addr(ch, 0, 0, 0, MAP_GRF, co);
+            uint64_t hex_addr = ReverseAddressMapping(addr);
+            TryAddTransaction(hex_addr, true, zero);
+        }
+    }
+    Barrier();
+}
+
+// Read PIM computation result from physical memory
+void LstmPreTransactionGenerator::GetResult() {
+    // Mode transition: AB -> SB
+    #ifdef debug_mode
+    std::cout << "HOST:\t[4] AB -> SB \n";
+    #endif
+    for (int ch = 0; ch < NUM_CHANNEL; ch++) {
+        Address addr(ch, 0, 0, 0, MAP_SBMR, 0);
+        uint64_t hex_addr = ReverseAddressMapping(addr);
+        TryAddTransaction(hex_addr, false, data_temp_);
+    }
+    Barrier();
+
+    uint64_t strided_size = Ceiling(o_f_ * 4 * UNIT_SIZE, SIZE_WORD * NUM_BANK);
+    // Read output data y
+    #ifdef debug_mode
+    std::cout << "\nHOST:\tRead output data y\n";
+    #endif
+    for (int offset = 0; offset < strided_size ; offset += SIZE_WORD)
+        TryAddTransaction(addr_y_ + offset, false, y_ + offset);
+    Barrier();
+}
+
+// Calculate error between the result of PIM computation and actual answer
+void LstmPreTransactionGenerator::CheckResult() {
+    float h_err = 0.;
+    uint8_t *answer = (uint8_t *)malloc(sizeof(uint16_t) * o_f_ * 4);
+
+    for (int o_fi=0; o_fi<o_f_*4; o_fi++) {
+        half h_answer(0);
+		half h_b(*reinterpret_cast<half*>(&((uint16_t*)b_)[o_fi]));
+		half h_x(*reinterpret_cast<half*>(&((uint16_t*)x_)[o_fi]));
+        
+		for (int i_fi=0; i_fi<i_f_; i_fi++) {
+			half h_Wh(*reinterpret_cast<half*>(&((uint16_t*)Wh_)[i_f_*o_fi + i_fi]));
+			half h_h(*reinterpret_cast<half*>(&((uint16_t*)h_)[i_fi]));
+            h_answer = fma(h_Wh, h_h, h_answer);
+        }
+        h_answer = h_answer + h_b + h_x;
+
+        ((uint16_t*)answer)[o_fi] = *reinterpret_cast<uint16_t*>(&h_answer);
+    }
+
+    // Calculate error
+    for (int o_fi=0; o_fi<o_f_*4; o_fi++) {
+        half h_answer(*reinterpret_cast<half*>(&((uint16_t*)answer)[o_fi]));
+        half h_y(*reinterpret_cast<half*>(&((uint16_t*)y_)[o_fi]));
+        std::cout << o_fi << " " << h_answer << " " << h_y << std::endl;
+        h_err += fabs(h_answer - h_y);  // fabs stands for float absolute value
+    }
+    std::cout << "ERROR : " << h_err << std::endl;
+}
+
+
 
 //iESLAB/////////////////////////////////////////////////////////////////////
 //////////////CCCCCCC/////////PPPPPPPPPPPPP/////////UUU///////////UUU////////

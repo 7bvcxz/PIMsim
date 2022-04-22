@@ -238,6 +238,38 @@ class LstmTransactionGenerator : public TransactionGenerator {
     uint32_t *ukernel_lstm_, *ukernel_wr_result_;
 };
 
+class LstmPreTransactionGenerator : public TransactionGenerator {
+ public:
+    LstmPreTransactionGenerator(const std::string& config_file,
+                                 const std::string& output_dir,
+                                 uint64_t i_f,
+                                 uint64_t o_f,
+                                 uint8_t *x,
+                                 uint8_t *y,
+                                 uint8_t *h,
+                                 uint8_t *b,
+                                 uint8_t *Wh)
+        : TransactionGenerator(config_file, output_dir),
+          i_f_(i_f), o_f_(o_f), x_(x), y_(y), h_(h), b_(b), Wh_(Wh) {}
+    void Initialize() override;
+    void SetData() override;
+    void Execute() override;
+    void GetResult() override;
+    void CheckResult() override;
+
+ private:
+    void ExecuteBank(int bank);
+
+    uint8_t *x_, *y_, *h_, *b_, *Wh_;
+    uint8_t *Wh_T_;
+    uint64_t i_f_, o_f_;
+    uint64_t addr_x_, addr_y_, addr_h_, addr_b_, addr_Wh_;
+    uint64_t ukernel_access_size_;
+    uint64_t ukernel_count_per_pim_;
+    uint32_t *ukernel_lstm_, *ukernel_wr_result_;
+};
+
+
 class CPUAddTransactionGenerator : public TransactionGenerator {
  public:
     CPUAddTransactionGenerator(const std::string& config_file,
