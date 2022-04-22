@@ -77,6 +77,8 @@ def convert_to_ukernel(words):
     if len(words) >= 4:
         ukernel_code = ukernel_code | src_code(words[3], 2)
     ukernel_code = ukernel_code - (1 << 32) # later gone
+    ukernel_code = str(bin(ukernel_code))
+    ukernel_code = '0b'+'0'*(34-len(ukernel_code))+ukernel_code[2:]
     return ukernel_code
 
 input_file = open("input.txt", "r")
@@ -88,7 +90,7 @@ for line in input_file:
     output_file.write("ukernel[")
     output_file.write(str(idx))
     output_file.write("]=")
-    output_file.write(str(bin(ukernel_code)))
+    output_file.write(ukernel_code)
     output_file.write(";  // ")
     output_file.write(line)
     idx = idx + 1
