@@ -1330,7 +1330,7 @@ void LstmPreTransactionGenerator::Initialize() {
 		ukernel_wr_result_[i] = 0b00000000000000000000000000000000; // initialize
 
     ukernel_wr_result_[0] = 0b10000010100000000000100010000000; // ADD     GRF_A[0]  GRF_B[0]  BANK
-    ukernel_wr_result_[1] = 0b10000100010000000000000100000000; // ADD     GRF_B[1]  GRF_A[0]  BANK
+    ukernel_wr_result_[1] = 0b10000100010000000000100110000000; // ADD     GRF_B[1]  GRF_A[0]  BANK
     ukernel_wr_result_[2] = 0b01000000100000000000000000010000; // MOV     BANK      GRF_B[1]
     ukernel_wr_result_[3] = 0b00100000000000000000000000000000; // EXIT
 }
@@ -1560,7 +1560,7 @@ void LstmPreTransactionGenerator::CheckResult() {
     for (int o_fi=0; o_fi<o_f_*4; o_fi++) {
         half h_answer(*reinterpret_cast<half*>(&((uint16_t*)answer)[o_fi]));
         half h_y(*reinterpret_cast<half*>(&((uint16_t*)y_)[o_fi]));
-        std::cout << o_fi << " " << h_answer << " " << h_y << std::endl;
+        //std::cout << o_fi << " " << h_answer << " " << h_y << std::endl;
         h_err += fabs(h_answer - h_y);  // fabs stands for float absolute value
     }
     std::cout << "ERROR : " << h_err << std::endl;

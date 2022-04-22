@@ -32,6 +32,8 @@ def op_code(word):
 def aam_code(word):
     if "AAM" in word:
         return 1 << 15
+    elif "(A" in word:
+        return 1 << 15
     else:
         return 0
 
@@ -57,6 +59,8 @@ def src_code(word, loc):
         tmp = int(re.sub(r'[^0-9]', '', word))
         if "-" in word:
             tmp = tmp | (0b1 << 7)
+        if "[A" not in word:
+            tmp = tmp | (0b1 << 3)
         tmp = tmp << idx_shifter
         out = out | tmp
     return out
