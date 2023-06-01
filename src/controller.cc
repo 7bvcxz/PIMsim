@@ -11,22 +11,23 @@ Controller::Controller(int channel, const Config &config, const Timing &timing,
 #else
 Controller::Controller(int channel, const Config &config, const Timing &timing)
 #endif  // THERMAL
-    : channel_id_(channel),
+    : 
+#ifdef THERMAL
+      thermal_calc_(thermal_calc),
+#endif  // THERMAL
+      write_buffer_threshold_(8),
+      channel_id_(channel),
       clk_(0),
       config_(config),
       simple_stats_(config_, channel_id_),
       channel_state_(config, timing),
       cmd_queue_(channel_id_, config, channel_state_, simple_stats_),
       refresh_(config, channel_state_),
-#ifdef THERMAL
-      thermal_calc_(thermal_calc),
-#endif  // THERMAL
       is_unified_queue_(config.unified_queue),
       row_buf_policy_(config.row_buf_policy == "CLOSE_PAGE"
                           ? RowBufPolicy::CLOSE_PAGE
                           : RowBufPolicy::OPEN_PAGE),
       last_trans_clk_(0),
-      write_buffer_threshold_(8),
       write_draining_(0) {
     if (is_unified_queue_) {
         unified_queue_.reserve(config_.trans_queue_size);

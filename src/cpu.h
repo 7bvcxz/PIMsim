@@ -21,7 +21,7 @@ class CPU {
     void ReadCallBack(uint64_t addr) { return; }
     void WriteCallBack(uint64_t addr) { return; }
     void PrintStats() { memory_system_.PrintStats(); }
-
+    virtual ~CPU() = default;
    protected:
     MemorySystem memory_system_;
     uint64_t clk_;

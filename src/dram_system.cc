@@ -173,7 +173,7 @@ bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write,
     assert(ok);
     if (ok) {
         Transaction trans = Transaction(hex_addr, is_write, DataPtr);
-		Address addr = config_.AddressMapping(hex_addr);
+		// Address addr = config_.AddressMapping(hex_addr);
         // Send transaction to PIM Functional Simulator
         //  Performs physical memory RD/WR, bank mode change, set PIM register,
         //  execute PIM computation and write result to physical memory

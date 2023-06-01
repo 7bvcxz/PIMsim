@@ -67,7 +67,7 @@ class TransactionGenerator {
         start_clk_ = 0;
         cnt_ = 0;
     }
-    ~TransactionGenerator() { delete(config_); }
+    virtual ~TransactionGenerator() { delete(config_); }
     // virtual void ClockTick() = 0;
     virtual void Initialize() = 0;
     virtual void SetData() = 0;
